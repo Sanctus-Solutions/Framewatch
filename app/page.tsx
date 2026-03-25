@@ -26,6 +26,13 @@ export default function HomePage() {
             </a>
 
             <a
+              href="/materials"
+              className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-900"
+            >
+              View Materials
+            </a>
+
+            <a
               href="/scan"
               className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-900"
             >

@@ -74,12 +74,21 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <a
-            href="/"
-            className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
-          >
-            Back Home
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href="/materials"
+              className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
+            >
+              View Materials
+            </a>
+
+            <a
+              href="/"
+              className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
+            >
+              Back Home
+            </a>
+          </div>
         </div>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
