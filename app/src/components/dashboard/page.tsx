@@ -1,4 +1,4 @@
-import { inventoryLogs, materials } from "../src/lib/mock-data";
+import { inventoryLogs, materials } from "../../lib/mock-data";
 
 export default function DashboardPage() {
   const materialsIn = inventoryLogs
