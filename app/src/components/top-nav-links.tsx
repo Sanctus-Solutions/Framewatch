@@ -22,8 +22,8 @@ export function TopNavLinks({ currentPath }: TopNavLinksProps) {
   const navButtonClassName = (isActive: boolean) =>
     `inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold transition ${
       isActive
-        ? "border-amber-500/70 bg-amber-500/10 text-amber-300"
-        : "border-slate-700 text-slate-200 hover:bg-slate-900"
+        ? "border-cyan-400/70 bg-cyan-500/10 text-cyan-200"
+        : "border-cyan-400/30 text-slate-200 hover:bg-[#111a2f]"
     }`;
 
   return (

@@ -48,11 +48,11 @@ export default function JobsPage() {
   ).sort((a, b) => b.totalQuantityMoved - a.totalQuantityMoved);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#050914] text-white">
       <section className="mx-auto w-full max-w-6xl px-6 py-16">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
               Jobs
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight">
@@ -66,7 +66,7 @@ export default function JobsPage() {
 
           <Link
             href="/dashboard"
-            className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
+            className="rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold hover:bg-[#111a2f]"
           >
             Back to Dashboard
           </Link>
@@ -75,11 +75,11 @@ export default function JobsPage() {
           <TopNavLinks currentPath="/jobs" />
         </div>
 
-        <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <div className="mt-10 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
           <h2 className="text-xl font-semibold">Job activity summary</h2>
 
           {jobSummaries.length === 0 ? (
-            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950 p-6">
+            <div className="mt-4 rounded-xl border border-cyan-500/20 bg-[#050914] p-6">
               <p className="text-base font-medium text-white">No job activity yet.</p>
               <p className="mt-2 text-sm text-slate-300">
                 Add job names to inventory logs to view usage, waste, and salvage by
@@ -91,7 +91,7 @@ export default function JobsPage() {
               {jobSummaries.map((job) => (
                 <div
                   key={job.jobName}
-                  className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-4"
+                  className="rounded-xl border border-cyan-500/20 bg-[#050914] px-4 py-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-lg font-semibold text-white">{job.jobName}</p>
@@ -101,13 +101,13 @@ export default function JobsPage() {
                   </div>
 
                   <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                    <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                    <div className="rounded-lg border border-cyan-500/20 bg-[#111a2f]/80 px-3 py-2">
                       <p className="text-xs uppercase tracking-wide text-slate-400">
                         Logged entries
                       </p>
                       <p className="mt-1 text-lg font-bold text-white">{job.totalEntries}</p>
                     </div>
-                    <div className="rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">
+                    <div className="rounded-lg border border-cyan-500/20 bg-[#111a2f]/80 px-3 py-2">
                       <p className="text-xs uppercase tracking-wide text-slate-400">
                         Quantity moved
                       </p>
@@ -115,11 +115,11 @@ export default function JobsPage() {
                         {job.totalQuantityMoved}
                       </p>
                     </div>
-                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-                      <p className="text-xs uppercase tracking-wide text-amber-300">
+                    <div className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
+                      <p className="text-xs uppercase tracking-wide text-cyan-200">
                         Waste quantity
                       </p>
-                      <p className="mt-1 text-lg font-bold text-amber-200">
+                      <p className="mt-1 text-lg font-bold text-cyan-100">
                         {job.wasteQuantity}
                       </p>
                     </div>

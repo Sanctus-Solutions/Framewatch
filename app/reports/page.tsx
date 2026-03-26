@@ -78,11 +78,11 @@ export default function ReportsPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#050914] text-white">
       <section className="mx-auto w-full max-w-6xl px-6 py-16">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
               Reports
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight">Waste & Material Loss</h1>
@@ -94,7 +94,7 @@ export default function ReportsPage() {
 
           <Link
             href="/dashboard"
-            className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
+            className="rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold hover:bg-[#111a2f]"
           >
             Back to Dashboard
           </Link>
@@ -104,7 +104,7 @@ export default function ReportsPage() {
         </div>
 
         {wasteRelatedLogs.length === 0 ? (
-          <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900/60 p-8 text-center">
+          <div className="mt-10 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-8 text-center">
             <h2 className="text-xl font-semibold">No waste activity yet</h2>
             <p className="mt-3 text-sm leading-6 text-slate-300">
               Add waste, partial-use, or salvaged entries from the scan flow to populate
@@ -113,7 +113,7 @@ export default function ReportsPage() {
             <div className="mt-6 flex justify-center gap-3">
               <Link
                 href="/scan"
-                className="rounded-xl border border-amber-500 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-300 hover:bg-amber-500/20"
+                className="rounded-xl border border-cyan-400/60 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/20"
               >
                 Open Scan Flow
               </Link>
@@ -125,7 +125,7 @@ export default function ReportsPage() {
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"
+                  className="rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-5"
                 >
                   <p className="text-sm text-slate-400">{stat.label}</p>
                   <p className="mt-3 text-3xl font-bold text-white">{stat.value}</p>
@@ -134,7 +134,7 @@ export default function ReportsPage() {
             </div>
 
             <div className="mt-10 grid gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+              <div className="rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
                 <h2 className="text-xl font-semibold">Top Waste Materials</h2>
 
                 {wasteByMaterial.length === 0 ? (
@@ -152,15 +152,15 @@ export default function ReportsPage() {
                       return (
                         <div
                           key={item.materialId}
-                          className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3"
+                          className="rounded-xl border border-cyan-500/20 bg-[#050914] px-4 py-3"
                         >
                           <div className="flex items-center justify-between gap-4">
                             <p className="font-medium text-white">{item.materialName}</p>
-                            <p className="text-lg font-bold text-amber-300">{item.total}</p>
+                            <p className="text-lg font-bold text-cyan-200">{item.total}</p>
                           </div>
                           <div className="mt-3 h-2 rounded-full bg-slate-800">
                             <div
-                              className="h-2 rounded-full bg-amber-400"
+                              className="h-2 rounded-full bg-cyan-300"
                               style={{ width: `${width}%` }}
                             />
                           </div>
@@ -171,7 +171,7 @@ export default function ReportsPage() {
                 )}
               </div>
 
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+              <div className="rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
                 <h2 className="text-xl font-semibold">Waste by Job</h2>
 
                 {wasteByJob.length === 0 ? (
@@ -189,15 +189,15 @@ export default function ReportsPage() {
                       return (
                         <div
                           key={item.jobName}
-                          className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3"
+                          className="rounded-xl border border-cyan-500/20 bg-[#050914] px-4 py-3"
                         >
                           <div className="flex items-center justify-between gap-4">
                             <p className="font-medium text-white">{item.jobName}</p>
-                            <p className="text-lg font-bold text-amber-300">{item.total}</p>
+                            <p className="text-lg font-bold text-cyan-200">{item.total}</p>
                           </div>
                           <div className="mt-3 h-2 rounded-full bg-slate-800">
                             <div
-                              className="h-2 rounded-full bg-amber-400"
+                              className="h-2 rounded-full bg-cyan-300"
                               style={{ width: `${width}%` }}
                             />
                           </div>
@@ -209,7 +209,7 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+            <div className="mt-4 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
               <h2 className="text-xl font-semibold">Recent Waste Activity</h2>
 
               <div className="mt-4 space-y-3">
@@ -220,8 +220,8 @@ export default function ReportsPage() {
                       key={entry.id}
                       className={`rounded-xl border px-4 py-3 ${
                         isWaste
-                          ? "border-amber-500/40 bg-amber-500/10"
-                          : "border-slate-800 bg-slate-950"
+                          ? "border-cyan-400/40 bg-cyan-500/10"
+                          : "border-cyan-500/20 bg-[#050914]"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-4">
@@ -231,8 +231,8 @@ export default function ReportsPage() {
                         <span
                           className={`rounded-full border px-2 py-1 text-xs uppercase tracking-wide ${
                             isWaste
-                              ? "border-amber-400/60 text-amber-300"
-                              : "border-slate-700 text-slate-300"
+                              ? "border-cyan-400/60 text-cyan-200"
+                              : "border-cyan-400/30 text-slate-300"
                           }`}
                         >
                           {entry.action}

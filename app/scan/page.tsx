@@ -57,11 +57,11 @@ export default function ScanPage() {
     }));
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#050914] text-white">
       <section className="mx-auto w-full max-w-3xl px-6 py-16">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
               Scan Flow
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight">
@@ -75,7 +75,7 @@ export default function ScanPage() {
 
           <Link
             href="/dashboard"
-            className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
+            className="rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold hover:bg-[#111a2f]"
           >
             Back to Dashboard
           </Link>
@@ -84,7 +84,7 @@ export default function ScanPage() {
           <TopNavLinks currentPath="/scan" />
         </div>
 
-        <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <div className="mt-10 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
           <h2 className="text-xl font-semibold">Manual Material Log</h2>
 
           <form
@@ -127,7 +127,7 @@ export default function ScanPage() {
                     setCodeLookupTouched(false);
                   }}
                   placeholder="Paste or type code (e.g. FW-LUM-2408)"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
+                  className="w-full rounded-xl border border-cyan-400/30 bg-[#050914] px-3 py-2 text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none"
                 />
                 <button
                   type="button"
@@ -138,7 +138,7 @@ export default function ScanPage() {
                       setMaterialId(matchedMaterialByCode.id);
                     }
                   }}
-                  className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                  className="rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-[#111a2f]"
                 >
                   Match Code
                 </button>
@@ -160,7 +160,7 @@ export default function ScanPage() {
               <select
                 value={materialId}
                 onChange={(event) => setMaterialId(event.target.value)}
-                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-amber-400 focus:outline-none"
+                className="rounded-xl border border-cyan-400/30 bg-[#050914] px-3 py-2 text-white focus:border-cyan-300 focus:outline-none"
               >
                 {materials.map((material) => (
                   <option key={material.id} value={material.id}>
@@ -178,7 +178,7 @@ export default function ScanPage() {
               <select
                 value={action}
                 onChange={(event) => setAction(event.target.value as InventoryAction)}
-                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-amber-400 focus:outline-none"
+                className="rounded-xl border border-cyan-400/30 bg-[#050914] px-3 py-2 text-white focus:border-cyan-300 focus:outline-none"
               >
                 {actionOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -199,7 +199,7 @@ export default function ScanPage() {
                 step={1}
                 value={quantity}
                 onChange={(event) => setQuantity(event.target.value)}
-                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-amber-400 focus:outline-none"
+                className="rounded-xl border border-cyan-400/30 bg-[#050914] px-3 py-2 text-white focus:border-cyan-300 focus:outline-none"
               />
               {submitAttempted && quantityInvalid ? (
                 <span className="text-xs text-red-400">
@@ -215,7 +215,7 @@ export default function ScanPage() {
                 value={jobName}
                 onChange={(event) => setJobName(event.target.value)}
                 placeholder="e.g. Cabin A12"
-                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
+                className="rounded-xl border border-cyan-400/30 bg-[#050914] px-3 py-2 text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none"
               />
             </label>
 
@@ -226,13 +226,13 @@ export default function ScanPage() {
                 onChange={(event) => setNote(event.target.value)}
                 placeholder="Optional context for this scan"
                 rows={3}
-                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
+                className="rounded-xl border border-cyan-400/30 bg-[#050914] px-3 py-2 text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none"
               />
             </label>
 
             <button
               type="submit"
-              className="rounded-xl border border-amber-500 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-300 hover:bg-amber-500/20"
+              className="rounded-xl border border-cyan-400/60 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/20"
             >
               Simulate Scan Entry
             </button>
@@ -243,7 +243,7 @@ export default function ScanPage() {
           </form>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <div className="mt-6 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
           <h2 className="text-xl font-semibold">Demo Material Codes</h2>
           <p className="mt-2 text-sm text-slate-300">
             Use these sample codes to simulate a QR scan lookup.
@@ -252,18 +252,18 @@ export default function ScanPage() {
             {materials.map((material) => (
               <li
                 key={material.id}
-                className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2"
+                className="rounded-xl border border-cyan-500/20 bg-[#050914] px-3 py-2"
               >
-                <span className="font-semibold text-amber-300">{material.scanCode}</span>{" "}
+                <span className="font-semibold text-cyan-200">{material.scanCode}</span>{" "}
                 <span className="text-slate-400">→</span> {material.name}
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <div className="mt-6 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
           <h2 className="text-xl font-semibold">Live Preview</h2>
-          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-300">
+          <div className="mt-4 rounded-xl border border-cyan-500/20 bg-[#050914] p-4 text-sm text-slate-300">
             <p>
               <span className="text-slate-400">Material:</span>{" "}
               <span className="font-semibold text-white">
@@ -272,7 +272,7 @@ export default function ScanPage() {
             </p>
             <p className="mt-2">
               <span className="text-slate-400">Action:</span>{" "}
-              <span className="uppercase tracking-wide text-amber-400">{action}</span>
+              <span className="uppercase tracking-wide text-cyan-300">{action}</span>
             </p>
             <p className="mt-2">
               <span className="text-slate-400">Quantity:</span>{" "}
@@ -287,17 +287,17 @@ export default function ScanPage() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <div className="mt-6 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
           <h2 className="text-xl font-semibold">Recent Simulated Entries</h2>
           <div className="mt-4 space-y-3">
             {recentEntries.map((entry) => (
               <div
                 key={entry.id}
-                className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3"
+                className="rounded-xl border border-cyan-500/20 bg-[#050914] px-4 py-3"
               >
                 <div className="flex items-center justify-between gap-4">
                   <p className="font-medium text-white">{entry.materialName}</p>
-                  <span className="rounded-full border border-slate-700 px-2 py-1 text-xs uppercase tracking-wide text-slate-300">
+                  <span className="rounded-full border border-cyan-400/30 px-2 py-1 text-xs uppercase tracking-wide text-slate-300">
                     {entry.action}
                   </span>
                 </div>

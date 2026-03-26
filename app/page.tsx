@@ -2,10 +2,10 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#050914] text-white">
       <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center px-6 py-16">
         <div className="max-w-3xl">
-          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
+          <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
             FrameWatch MVP
           </p>
 
@@ -22,14 +22,14 @@ export default function HomePage() {
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
               href="/dashboard"
-              className="rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:opacity-90"
+              className="rounded-xl bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:opacity-90"
             >
               Open Dashboard
             </Link>
 
             <Link
               href="/scan"
-              className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-900"
+              className="rounded-xl border border-cyan-400/30 px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#111a2f]"
             >
               Log a Scan Entry
             </Link>
@@ -39,27 +39,27 @@ export default function HomePage() {
             <span className="text-sm text-slate-500">Quick links:</span>
             <Link
               href="/materials"
-              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-900"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-[#111a2f]"
             >
               Materials
             </Link>
             <Link
               href="/jobs"
-              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-900"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-[#111a2f]"
             >
               Jobs
             </Link>
             <Link
               href="/reports"
-              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-900"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-[#111a2f]"
             >
               Reports
             </Link>
           </div>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-slate-200">
-          <p className="font-semibold text-amber-300">Investor/Beta Demo Path</p>
+        <div className="mt-8 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 p-5 text-sm text-slate-200">
+          <p className="font-semibold text-cyan-200">Investor/Beta Demo Path</p>
           <p className="mt-2 leading-6 text-slate-200">
             Start in <span className="font-semibold">Scan</span> to log activity, then open{" "}
             <span className="font-semibold">Dashboard</span> and{" "}
@@ -89,7 +89,7 @@ export default function HomePage() {
           ].map((item) => (
             <div
               key={item.title}
-              className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"
+              className="rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-5"
             >
               <h2 className="text-lg font-semibold">{item.title}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">{item.text}</p>
