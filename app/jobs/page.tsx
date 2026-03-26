@@ -1,8 +1,6 @@
-"use client";
-
 import Link from "next/link";
-import { useDemoState } from "../src/components/demo-state-provider";
 import { TopNavLinks } from "../src/components/top-nav-links";
+import { fetchInventoryLogsFromSupabase } from "../src/lib/supabase";
 
 type JobSummary = {
   jobName: string;
@@ -12,8 +10,9 @@ type JobSummary = {
   salvagedQuantity: number;
 };
 
-export default function JobsPage() {
-  const { logs } = useDemoState();
+export default async function JobsPage() {
+  const { data: logs, error } = await fetchInventoryLogsFromSupabase();
+
   const jobSummaries = Object.values(
     logs.reduce<Record<string, JobSummary>>((acc, log) => {
       const jobName = log.jobName?.trim();
@@ -44,7 +43,7 @@ export default function JobsPage() {
       }
 
       return acc;
-    }, {})
+    }, {}),
   ).sort((a, b) => b.totalQuantityMoved - a.totalQuantityMoved);
 
   return (
@@ -55,13 +54,16 @@ export default function JobsPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
               Jobs
             </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight">
-              Activity by build/job
-            </h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight">Activity by build/job</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-              Grouped job-level material activity from mock inventory logs for the
+              Grouped job-level material activity sourced from Supabase inventory logs for the
               Tuckertown Buildings MVP.
             </p>
+            {error ? (
+              <p className="mt-3 text-sm text-amber-200">
+                Unable to load job summaries from Supabase. {error}
+              </p>
+            ) : null}
           </div>
 
           <Link
@@ -102,34 +104,22 @@ export default function JobsPage() {
 
                   <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
                     <div className="rounded-lg border border-cyan-500/20 bg-[#111a2f]/80 px-3 py-2">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">
-                        Logged entries
-                      </p>
+                      <p className="text-xs uppercase tracking-wide text-slate-400">Logged entries</p>
                       <p className="mt-1 text-lg font-bold text-white">{job.totalEntries}</p>
                     </div>
                     <div className="rounded-lg border border-cyan-500/20 bg-[#111a2f]/80 px-3 py-2">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">
-                        Quantity moved
-                      </p>
-                      <p className="mt-1 text-lg font-bold text-white">
-                        {job.totalQuantityMoved}
-                      </p>
+                      <p className="text-xs uppercase tracking-wide text-slate-400">Quantity moved</p>
+                      <p className="mt-1 text-lg font-bold text-white">{job.totalQuantityMoved}</p>
                     </div>
                     <div className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
-                      <p className="text-xs uppercase tracking-wide text-cyan-200">
-                        Waste quantity
-                      </p>
-                      <p className="mt-1 text-lg font-bold text-cyan-100">
-                        {job.wasteQuantity}
-                      </p>
+                      <p className="text-xs uppercase tracking-wide text-cyan-200">Waste quantity</p>
+                      <p className="mt-1 text-lg font-bold text-cyan-100">{job.wasteQuantity}</p>
                     </div>
                     <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
                       <p className="text-xs uppercase tracking-wide text-emerald-300">
                         Salvaged quantity
                       </p>
-                      <p className="mt-1 text-lg font-bold text-emerald-200">
-                        {job.salvagedQuantity}
-                      </p>
+                      <p className="mt-1 text-lg font-bold text-emerald-200">{job.salvagedQuantity}</p>
                     </div>
                   </div>
                 </div>

@@ -1,14 +1,15 @@
-"use client";
-
 import Link from "next/link";
-import { useDemoState } from "../src/components/demo-state-provider";
 import { TopNavLinks } from "../src/components/top-nav-links";
-import { materials } from "../src/lib/mock-data";
+import {
+  fetchInventoryLogsFromSupabase,
+  fetchMaterialsFromSupabase,
+} from "../src/lib/supabase";
 
 const wasteActions = new Set(["waste", "partial", "salvaged"]);
 
-export default function ReportsPage() {
-  const { logs } = useDemoState();
+export default async function ReportsPage() {
+  const [{ data: logs, error: logsError }, { data: materials, error: materialsError }] =
+    await Promise.all([fetchInventoryLogsFromSupabase(), fetchMaterialsFromSupabase()]);
 
   const materialNameById = materials.reduce<Record<string, string>>((acc, item) => {
     acc[item.id] = item.name;
@@ -39,7 +40,7 @@ export default function ReportsPage() {
 
       acc[log.materialId] = (acc[log.materialId] ?? 0) + log.quantity;
       return acc;
-    }, {})
+    }, {}),
   )
     .map(([materialId, total]) => ({
       materialId,
@@ -63,7 +64,7 @@ export default function ReportsPage() {
 
       acc[jobName] = (acc[jobName] ?? 0) + log.quantity;
       return acc;
-    }, {})
+    }, {}),
   )
     .map(([jobName, total]) => ({ jobName, total }))
     .sort((a, b) => b.total - a.total);
@@ -87,9 +88,14 @@ export default function ReportsPage() {
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight">Waste & Material Loss</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-              Demo-focused reporting for Tuckertown Buildings to quickly show where
-              waste is happening and where salvage is offsetting loss.
+              Reporting for Tuckertown Buildings sourced from Supabase to show where waste
+              is happening and where salvage is offsetting loss.
             </p>
+            {logsError || materialsError ? (
+              <p className="mt-3 text-sm text-amber-200">
+                Unable to fully load reports data from Supabase. {logsError ?? materialsError}
+              </p>
+            ) : null}
           </div>
 
           <Link
@@ -107,17 +113,9 @@ export default function ReportsPage() {
           <div className="mt-10 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-8 text-center">
             <h2 className="text-xl font-semibold">No waste activity yet</h2>
             <p className="mt-3 text-sm leading-6 text-slate-300">
-              Add waste, partial-use, or salvaged entries from the scan flow to populate
-              this report and demo material-loss visibility.
+              Add waste, partial-use, or salvaged entries to inventory logs to populate this
+              report and material-loss visibility.
             </p>
-            <div className="mt-6 flex justify-center gap-3">
-              <Link
-                href="/scan"
-                className="rounded-xl border border-cyan-400/60 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-500/20"
-              >
-                Open Scan Flow
-              </Link>
-            </div>
           </div>
         ) : (
           <>
@@ -242,9 +240,7 @@ export default function ReportsPage() {
                         Quantity: {entry.quantity}
                         {entry.jobName ? ` • Job: ${entry.jobName}` : ""}
                       </p>
-                      {entry.note ? (
-                        <p className="mt-1 text-xs text-slate-400">{entry.note}</p>
-                      ) : null}
+                      {entry.note ? <p className="mt-1 text-xs text-slate-400">{entry.note}</p> : null}
                     </div>
                   );
                 })}

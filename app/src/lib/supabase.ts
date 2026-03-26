@@ -1,3 +1,4 @@
+import type { InventoryAction, InventoryLog } from "../types/inventory";
 import type { Material, MaterialCategory, MaterialUnit } from "../types/material";
 
 type SupabaseMaterialRow = {
@@ -13,11 +14,27 @@ type SupabaseMaterialRow = {
   scanCode?: string | null;
 };
 
+type SupabaseInventoryLogRow = {
+  id: string;
+  material_id?: string;
+  materialId?: string;
+  action: InventoryAction;
+  quantity: number;
+  job_name?: string | null;
+  jobName?: string | null;
+  note?: string | null;
+  created_at?: string;
+  createdAt?: string;
+};
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const MATERIAL_FIELDS =
   "id,name,sku,category,unit,color,active,scan_code,qr_code,scanCode";
+
+const INVENTORY_LOG_FIELDS =
+  "id,material_id,materialId,action,quantity,job_name,jobName,note,created_at,createdAt";
 
 const normalizeMaterial = (row: SupabaseMaterialRow): Material => ({
   id: row.id,
@@ -28,6 +45,16 @@ const normalizeMaterial = (row: SupabaseMaterialRow): Material => ({
   color: row.color ?? undefined,
   active: Boolean(row.active),
   scanCode: row.scan_code ?? row.qr_code ?? row.scanCode ?? row.id,
+});
+
+const normalizeInventoryLog = (row: SupabaseInventoryLogRow): InventoryLog => ({
+  id: row.id,
+  materialId: row.material_id ?? row.materialId ?? "",
+  action: row.action,
+  quantity: Number(row.quantity) || 0,
+  ...(row.job_name ?? row.jobName ? { jobName: row.job_name ?? row.jobName ?? undefined } : {}),
+  ...(row.note ? { note: row.note } : {}),
+  createdAt: row.created_at ?? row.createdAt ?? new Date(0).toISOString(),
 });
 
 export function isSupabaseConfigured() {
@@ -77,6 +104,17 @@ export async function fetchMaterialByIdFromSupabase(materialId: string) {
 
   return {
     data: material,
+    error: result.error,
+  };
+}
+
+export async function fetchInventoryLogsFromSupabase() {
+  const result = await supabaseGet<SupabaseInventoryLogRow[]>(
+    `/rest/v1/inventory_logs?select=${INVENTORY_LOG_FIELDS}&order=created_at.desc`,
+  );
+
+  return {
+    data: (result.data ?? []).map(normalizeInventoryLog),
     error: result.error,
   };
 }
