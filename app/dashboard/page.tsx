@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { inventoryLogs, materials } from "../src/lib/mock-data";
+import { useDemoState } from "../src/components/demo-state-provider";
+import { materials } from "../src/lib/mock-data";
 import type { InventoryAction } from "../src/types/inventory";
 
 const formatActionLabel = (action: InventoryAction) =>
@@ -14,13 +17,14 @@ const actionOrder: InventoryAction[] = [
 ];
 
 export default function DashboardPage() {
+  const { logs } = useDemoState();
   const materialNameById = materials.reduce<Record<string, string>>((acc, item) => {
     acc[item.id] = item.name;
     return acc;
   }, {});
 
   const actionTotals = actionOrder.map((action) => {
-    const total = inventoryLogs
+    const total = logs
       .filter((log) => log.action === action)
       .reduce((sum, log) => sum + log.quantity, 0);
 
@@ -29,12 +33,12 @@ export default function DashboardPage() {
 
   const materialsIn = actionTotals.find((item) => item.action === "in")?.total ?? 0;
   const materialsOut = actionTotals.find((item) => item.action === "out")?.total ?? 0;
-  const wasteEvents = inventoryLogs.filter((log) => log.action === "waste");
+  const wasteEvents = logs.filter((log) => log.action === "waste");
   const salvagedItems =
     actionTotals.find((item) => item.action === "salvaged")?.total ?? 0;
 
   const materialActivity = Object.entries(
-    inventoryLogs.reduce<Record<string, number>>((acc, log) => {
+    logs.reduce<Record<string, number>>((acc, log) => {
       acc[log.materialId] = (acc[log.materialId] ?? 0) + log.quantity;
       return acc;
     }, {})
@@ -48,7 +52,7 @@ export default function DashboardPage() {
     .slice(0, 5);
 
   const jobActivity = Object.entries(
-    inventoryLogs.reduce<Record<string, number>>((acc, log) => {
+    logs.reduce<Record<string, number>>((acc, log) => {
       const jobName = log.jobName?.trim();
       if (!jobName) {
         return acc;
@@ -62,7 +66,7 @@ export default function DashboardPage() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
 
-  const recentActivity = [...inventoryLogs]
+  const recentActivity = [...logs]
     .sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
