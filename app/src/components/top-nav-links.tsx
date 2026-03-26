@@ -11,13 +11,14 @@ const primaryNavItems = [
 
 const secondaryNavItems = [
   { href: "/materials", label: "Materials" },
+  { href: "/categories", label: "Categories" },
   { href: "/jobs", label: "Jobs" },
   { href: "/reports", label: "Reports" },
 ];
 
 export function TopNavLinks({ currentPath }: TopNavLinksProps) {
   const isRouteActive = (href: string) =>
-    href === currentPath || (href === "/materials" && currentPath.startsWith("/materials/"));
+    href === currentPath || (href === "/materials" && currentPath.startsWith("/materials/")) || (href === "/categories" && currentPath.startsWith("/categories/"));
 
   const navButtonClassName = (isActive: boolean) =>
     `inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold transition ${
