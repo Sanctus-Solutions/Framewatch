@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { inventoryLogs } from "../src/lib/mock-data";
+import { useDemoState } from "../src/components/demo-state-provider";
 
 type JobSummary = {
   jobName: string;
@@ -10,8 +12,9 @@ type JobSummary = {
 };
 
 export default function JobsPage() {
+  const { logs } = useDemoState();
   const jobSummaries = Object.values(
-    inventoryLogs.reduce<Record<string, JobSummary>>((acc, log) => {
+    logs.reduce<Record<string, JobSummary>>((acc, log) => {
       const jobName = log.jobName?.trim();
 
       if (!jobName) {

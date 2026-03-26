@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { inventoryLogs, materials } from "../src/lib/mock-data";
+import { materials } from "../src/lib/mock-data";
+import { useDemoState } from "../src/components/demo-state-provider";
 import type { InventoryAction, InventoryLog } from "../src/types/inventory";
 
 const actionOptions: { value: InventoryAction; label: string }[] = [
@@ -19,7 +20,7 @@ export default function ScanPage() {
   const [quantity, setQuantity] = useState("1");
   const [jobName, setJobName] = useState("");
   const [note, setNote] = useState("");
-  const [logs, setLogs] = useState<InventoryLog[]>(inventoryLogs);
+  const { logs, addLog } = useDemoState();
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("");
 
@@ -93,7 +94,7 @@ export default function ScanPage() {
                 createdAt: new Date().toISOString(),
               };
 
-              setLogs((currentLogs) => [newEntry, ...currentLogs]);
+              addLog(newEntry);
               setQuantity("1");
               setJobName("");
               setNote("");
