@@ -35,15 +35,24 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-300">
-            <span className="text-slate-500">Quick links:</span>
-            <Link href="/materials" className="underline-offset-4 hover:underline">
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <span className="text-sm text-slate-500">Quick links:</span>
+            <Link
+              href="/materials"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-900"
+            >
               Materials
             </Link>
-            <Link href="/jobs" className="underline-offset-4 hover:underline">
+            <Link
+              href="/jobs"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-900"
+            >
               Jobs
             </Link>
-            <Link href="/reports" className="underline-offset-4 hover:underline">
+            <Link
+              href="/reports"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-900"
+            >
               Reports
             </Link>
           </div>

@@ -19,16 +19,19 @@ export function TopNavLinks({ currentPath }: TopNavLinksProps) {
   const isRouteActive = (href: string) =>
     href === currentPath || (href === "/materials" && currentPath.startsWith("/materials/"));
 
+  const navButtonClassName = (isActive: boolean) =>
+    `inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+      isActive
+        ? "border-amber-500/70 bg-amber-500/10 text-amber-300"
+        : "border-slate-700 text-slate-200 hover:bg-slate-900"
+    }`;
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex items-center gap-3 overflow-x-auto pb-1">
         <Link
           href="/"
-          className={`shrink-0 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
-            currentPath === "/"
-              ? "border-amber-500/70 bg-amber-500/10 text-amber-300"
-              : "border-slate-700 text-slate-200 hover:bg-slate-900"
-          }`}
+          className={navButtonClassName(currentPath === "/")}
         >
           Home
         </Link>
@@ -40,11 +43,7 @@ export function TopNavLinks({ currentPath }: TopNavLinksProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`shrink-0 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
-                isActive
-                  ? "border-amber-500/70 bg-amber-500/10 text-amber-300"
-                  : "border-slate-700 text-slate-200 hover:bg-slate-900"
-              }`}
+              className={navButtonClassName(isActive)}
             >
               {item.label}
             </Link>
@@ -52,8 +51,8 @@ export function TopNavLinks({ currentPath }: TopNavLinksProps) {
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
-        <span className="uppercase tracking-wide text-slate-500">More</span>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-xs uppercase tracking-wide text-slate-500">More</span>
         {secondaryNavItems.map((item) => {
           const isActive = isRouteActive(item.href);
 
@@ -61,9 +60,7 @@ export function TopNavLinks({ currentPath }: TopNavLinksProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`underline-offset-4 transition hover:underline ${
-                isActive ? "font-semibold text-amber-300 no-underline" : "text-slate-300"
-              }`}
+              className={navButtonClassName(isActive)}
             >
               {item.label}
             </Link>
