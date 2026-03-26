@@ -36,6 +36,17 @@ const MATERIAL_FIELDS =
 const INVENTORY_LOG_FIELDS =
   "id,material_id,materialId,action,quantity,job_name,jobName,note,created_at,createdAt";
 
+export type CreateMaterialInput = {
+  name: string;
+  sku: string;
+  category: string;
+  unit: string;
+  color?: string;
+  active: boolean;
+  scanCode?: string;
+  qrCode?: string;
+};
+
 const normalizeMaterial = (row: SupabaseMaterialRow): Material => ({
   id: row.id,
   name: row.name,
@@ -86,6 +97,31 @@ async function supabaseGet<T>(path: string) {
   return { data: (await response.json()) as T, error: null };
 }
 
+async function supabasePost<TBody extends object>(path: string, body: TBody) {
+  if (!isSupabaseConfigured()) {
+    return { error: "Supabase env vars are not configured yet." };
+  }
+
+  const url = `${supabaseUrl}/rest/v1${path}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabaseAnonKey as string,
+      Authorization: `Bearer ${supabaseAnonKey as string}`,
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return { error: `Supabase insert failed with status ${response.status}.` };
+  }
+
+  return { error: null };
+}
+
 export async function fetchMaterialsFromSupabase() {
   const result = await supabaseGet<SupabaseMaterialRow[]>(
     `/materials?order=name.asc`,
@@ -119,4 +155,25 @@ export async function fetchInventoryLogsFromSupabase() {
     data: (result.data ?? []).map(normalizeInventoryLog),
     error: result.error,
   };
+}
+
+export async function createMaterialInSupabase(material: CreateMaterialInput) {
+  const payload: Record<string, string | boolean | null> = {
+    name: material.name,
+    sku: material.sku,
+    category: material.category,
+    unit: material.unit,
+    active: material.active,
+    color: material.color ?? null,
+  };
+
+  if (material.scanCode) {
+    payload.scan_code = material.scanCode;
+  }
+
+  if (material.qrCode) {
+    payload.qr_code = material.qrCode;
+  }
+
+  return supabasePost("/materials", payload);
 }
