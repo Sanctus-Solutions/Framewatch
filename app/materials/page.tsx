@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { TopNavLinks } from "../src/components/top-nav-links";
 import { materials } from "../src/lib/mock-data";
 
 export default function MaterialsPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <section className="mx-auto w-full max-w-6xl px-6 py-16">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
               Materials
@@ -22,8 +23,11 @@ export default function MaterialsPage() {
             href="/dashboard"
             className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
           >
-            Back Dashboard
+            Back to Dashboard
           </Link>
+        </div>
+        <div className="mt-5">
+          <TopNavLinks currentPath="/materials" />
         </div>
 
         <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">

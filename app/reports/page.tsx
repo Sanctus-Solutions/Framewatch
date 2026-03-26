@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useDemoState } from "../src/components/demo-state-provider";
+import { TopNavLinks } from "../src/components/top-nav-links";
 import { materials } from "../src/lib/mock-data";
 
 const wasteActions = new Set(["waste", "partial", "salvaged"]);
@@ -79,7 +80,7 @@ export default function ReportsPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <section className="mx-auto w-full max-w-6xl px-6 py-16">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
               Reports
@@ -91,20 +92,15 @@ export default function ReportsPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
-            >
-              View Dashboard
-            </Link>
-            <Link
-              href="/"
-              className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
-            >
-              Back Home
-            </Link>
-          </div>
+          <Link
+            href="/dashboard"
+            className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
+          >
+            Back to Dashboard
+          </Link>
+        </div>
+        <div className="mt-5">
+          <TopNavLinks currentPath="/reports" />
         </div>
 
         {wasteRelatedLogs.length === 0 ? (

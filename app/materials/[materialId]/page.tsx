@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TopNavLinks } from "../../src/components/top-nav-links";
 import { inventoryLogs, materials } from "../../src/lib/mock-data";
 import type { InventoryAction } from "../../src/types/inventory";
 
@@ -39,7 +40,7 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
               href="/dashboard"
               className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-900"
             >
-              Back Dashboard
+              Back to Dashboard
             </Link>
           </div>
         </section>
@@ -61,7 +62,7 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <section className="mx-auto w-full max-w-6xl px-6 py-16">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
               Material Detail
@@ -78,6 +79,9 @@ export default function MaterialDetailPage({ params }: MaterialDetailPageProps) 
           >
             Back to Materials
           </Link>
+        </div>
+        <div className="mt-5">
+          <TopNavLinks currentPath={`/materials/${material.id}`} />
         </div>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
