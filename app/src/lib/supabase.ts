@@ -159,6 +159,7 @@ export async function fetchInventoryLogsFromSupabase() {
 
 export async function createMaterialInSupabase(material: CreateMaterialInput) {
   const payload: Record<string, string | boolean | null> = {
+    id: crypto.randomUUID(),
     name: material.name,
     sku: material.sku,
     category: material.category,
