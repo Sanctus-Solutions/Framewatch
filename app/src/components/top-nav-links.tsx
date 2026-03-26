@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 type TopNavLinksProps = {
   currentPath: string;
@@ -18,6 +22,20 @@ const secondaryNavItems = [
 ];
 
 export function TopNavLinks({ currentPath }: TopNavLinksProps) {
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setIsLoggingOut(false);
+    }
+  };
+
   const isRouteActive = (href: string) =>
     href === currentPath || 
     (href === "/materials" && currentPath.startsWith("/materials/")) || 
@@ -76,6 +94,14 @@ export function TopNavLinks({ currentPath }: TopNavLinksProps) {
       <p className="text-xs text-slate-500">
         Demo mode: data is mocked and can reset when the session reloads.
       </p>
+
+      <button
+        onClick={handleLogout}
+        disabled={isLoggingOut}
+        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-red-400/30 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/10 disabled:opacity-50"
+      >
+        {isLoggingOut ? "Logging out..." : "Logout"}
+      </button>
     </div>
   );
 }
