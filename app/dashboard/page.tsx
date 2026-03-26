@@ -85,11 +85,11 @@ export default function DashboardPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#050914] text-white">
       <section className="mx-auto w-full max-w-6xl px-6 py-16">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
               Dashboard
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight">
@@ -109,7 +109,7 @@ export default function DashboardPage() {
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5"
+              className="rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-5"
             >
               <p className="text-sm text-slate-400">{stat.label}</p>
               <p className="mt-3 text-3xl font-bold text-white">{stat.value}</p>
@@ -118,7 +118,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-10 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <div className="rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
             <h2 className="text-xl font-semibold">Inventory Activity by Action</h2>
             <div className="mt-4 space-y-3">
               {actionTotals.map((item) => {
@@ -128,14 +128,14 @@ export default function DashboardPage() {
                     key={item.action}
                     className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
                       isWaste
-                        ? "border-amber-500/40 bg-amber-500/10"
-                        : "border-slate-800 bg-slate-950"
+                        ? "border-cyan-400/40 bg-cyan-500/10"
+                        : "border-cyan-500/20 bg-[#050914]"
                     }`}
                   >
                     <p className="font-medium text-white">{formatActionLabel(item.action)}</p>
                     <p
                       className={`text-lg font-bold ${
-                        isWaste ? "text-amber-400" : "text-slate-100"
+                        isWaste ? "text-cyan-300" : "text-slate-100"
                       }`}
                     >
                       {item.total}
@@ -146,7 +146,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <div className="rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
             <h2 className="text-xl font-semibold">Top Material Activity</h2>
             {materialActivity.length === 0 ? (
               <p className="mt-3 text-sm leading-6 text-slate-300">
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                 {materialActivity.map((item, index) => (
                   <div
                     key={item.materialId}
-                    className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3"
+                    className="rounded-xl border border-cyan-500/20 bg-[#050914] px-4 py-3"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <p className="font-medium text-white">{item.materialName}</p>
@@ -175,7 +175,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <div className="rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
             <h2 className="text-xl font-semibold">Jobs with Most Activity</h2>
             {jobActivity.length === 0 ? (
               <p className="mt-3 text-sm leading-6 text-slate-300">
@@ -186,7 +186,7 @@ export default function DashboardPage() {
                 {jobActivity.map((item) => (
                   <div
                     key={item.jobName}
-                    className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 px-4 py-3"
+                    className="flex items-center justify-between rounded-xl border border-cyan-500/20 bg-[#050914] px-4 py-3"
                   >
                     <p className="font-medium text-white">{item.jobName}</p>
                     <p className="text-lg font-bold text-slate-100">{item.total}</p>
@@ -196,7 +196,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <div className="rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
             <h2 className="text-xl font-semibold">Recent Activity</h2>
 
             {recentActivity.length === 0 ? (
@@ -212,8 +212,8 @@ export default function DashboardPage() {
                       key={item.id}
                       className={`rounded-xl border px-4 py-3 ${
                         isWaste
-                          ? "border-amber-500/40 bg-amber-500/10"
-                          : "border-slate-800 bg-slate-950"
+                          ? "border-cyan-400/40 bg-cyan-500/10"
+                          : "border-cyan-500/20 bg-[#050914]"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-4">
@@ -221,8 +221,8 @@ export default function DashboardPage() {
                         <span
                           className={`rounded-full border px-2 py-1 text-xs uppercase tracking-wide ${
                             isWaste
-                              ? "border-amber-400/60 text-amber-300"
-                              : "border-slate-700 text-slate-300"
+                              ? "border-cyan-400/60 text-cyan-200"
+                              : "border-cyan-400/30 text-slate-300"
                           }`}
                         >
                           {item.action}
