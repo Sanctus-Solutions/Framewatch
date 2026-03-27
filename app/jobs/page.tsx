@@ -158,8 +158,17 @@ async function deleteJobUsageProjectAction(formData: FormData) {
   "use server";
 
   const jobName = String(formData.get("job_name") ?? "").trim();
+  const confirmation = String(formData.get("confirm_job_name") ?? "").trim();
   if (!jobName) {
     redirect("/jobs?status=error&message=Missing job name");
+  }
+
+  if (confirmation !== jobName) {
+    redirect(
+      `/jobs?status=error&message=${encodeURIComponent(
+        "Delete blocked: confirmation must exactly match the job name.",
+      )}`,
+    );
   }
 
   const result = await deleteInventoryLogsByJobNameInSupabase(jobName);
@@ -382,6 +391,12 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                       </p>
                       <form action={deleteJobUsageProjectAction}>
                         <input type="hidden" name="job_name" value={job.jobName} />
+                        <input
+                          type="text"
+                          name="confirm_job_name"
+                          placeholder="Type job name to confirm"
+                          className="mr-2 rounded-lg border border-cyan-400/30 bg-[#050914] px-2 py-1 text-xs text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none"
+                        />
                         <button
                           type="submit"
                           className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/20"

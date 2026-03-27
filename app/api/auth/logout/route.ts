@@ -13,6 +13,9 @@ export async function POST(request: Request) {
     name: SESSION_TOKEN,
     value: "",
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
     maxAge: 0,
   });
 

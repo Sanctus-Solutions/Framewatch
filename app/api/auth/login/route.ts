@@ -4,6 +4,7 @@ const SESSION_TOKEN = "framewatch_auth_token_v1";
 const LOGIN_USERNAME = process.env.FRAMEWATCH_LOGIN_USERNAME ?? "tucker";
 const SUPABASE_LOGIN_EMAIL =
   process.env.SUPABASE_LOGIN_EMAIL ?? "tucker@framewatch.local";
+const SESSION_SECRET = process.env.FRAMEWATCH_SESSION_SECRET ?? "";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -33,8 +34,52 @@ async function authenticateWithSupabase(password: string) {
   return { success: true, reason: null };
 }
 
+function toBase64Url(bytes: Uint8Array) {
+  return Buffer.from(bytes)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+async function signPayload(payloadPart: string, secret: string) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payloadPart));
+  return toBase64Url(new Uint8Array(signature));
+}
+
+async function createSessionToken() {
+  const now = Date.now();
+  const payload = {
+    sub: "framewatch",
+    iat: now,
+    exp: now + 24 * 60 * 60 * 1000,
+    nonce: crypto.randomUUID(),
+  };
+
+  const payloadPart = toBase64Url(Buffer.from(JSON.stringify(payload), "utf8"));
+  const signaturePart = await signPayload(payloadPart, SESSION_SECRET);
+
+  return `${payloadPart}.${signaturePart}`;
+}
+
 export async function POST(request: Request) {
   try {
+    if (!SESSION_SECRET) {
+      return NextResponse.json(
+        { error: "Session secret is not configured" },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { username, password } = body;
 
@@ -60,10 +105,12 @@ export async function POST(request: Request) {
       { status: 200 }
     );
 
-    // Set secure session cookie (httpOnly to prevent XSS)
+    const sessionToken = await createSessionToken();
+
+    // Set signed and expiring session cookie (httpOnly to prevent XSS)
     response.cookies.set({
       name: SESSION_TOKEN,
-      value: "authenticated",
+      value: sessionToken,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
