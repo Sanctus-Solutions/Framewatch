@@ -236,6 +236,10 @@ export async function deleteInventoryLogInSupabase(logId: string) {
   return supabaseDelete(`/inventory_logs?id=eq.${encodeURIComponent(logId)}`);
 }
 
+export async function deleteInventoryLogsByJobNameInSupabase(jobName: string) {
+  return supabaseDelete(`/inventory_logs?job_name=eq.${encodeURIComponent(jobName)}`);
+}
+
 export async function updateMaterialInSupabase(
   materialId: string,
   updates: Partial<CreateMaterialInput>
@@ -364,6 +368,22 @@ type SupabaseUnitRow = {
   created_at?: string;
 };
 
+type SupabaseJobTypeRow = {
+  id: string;
+  name: string;
+  description?: string | null;
+  created_at?: string;
+};
+
+type SupabaseBuildingRow = {
+  id: string;
+  name: string;
+  job_type_name?: string | null;
+  special_id: string;
+  qr_value: string;
+  created_at?: string;
+};
+
 export async function fetchUnitsFromSupabase() {
   const result = await supabaseGet<SupabaseUnitRow[]>(
     `/units?order=name.asc`,
@@ -387,6 +407,74 @@ export async function createUnitInSupabase(name: string, description?: string) {
 
 export async function deleteUnitInSupabase(unitName: string) {
   return supabaseDelete(`/units?name=eq.${encodeURIComponent(unitName)}`);
+}
+
+export async function fetchJobTypesFromSupabase() {
+  const result = await supabaseGet<SupabaseJobTypeRow[]>(
+    `/job_types?order=name.asc`,
+  );
+
+  return {
+    data: (result.data ?? []).map((jobType) => ({
+      name: jobType.name,
+      description: jobType.description,
+    })),
+    error: result.error,
+  };
+}
+
+export async function createJobTypeInSupabase(name: string, description?: string) {
+  const payload: Record<string, string | null> = {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    description: description?.trim() ?? null,
+  };
+
+  return supabasePost("/job_types", payload);
+}
+
+export async function deleteJobTypeInSupabase(name: string) {
+  return supabaseDelete(`/job_types?name=eq.${encodeURIComponent(name)}`);
+}
+
+export type CreateBuildingInput = {
+  name: string;
+  specialId: string;
+  qrValue: string;
+  jobTypeName?: string;
+};
+
+export async function fetchBuildingsFromSupabase() {
+  const result = await supabaseGet<SupabaseBuildingRow[]>(
+    `/buildings?order=created_at.desc`,
+  );
+
+  return {
+    data: (result.data ?? []).map((building) => ({
+      id: building.id,
+      name: building.name,
+      specialId: building.special_id,
+      qrValue: building.qr_value,
+      ...(building.job_type_name ? { jobTypeName: building.job_type_name } : {}),
+    })),
+    error: result.error,
+  };
+}
+
+export async function createBuildingInSupabase(input: CreateBuildingInput) {
+  const payload: Record<string, string | null> = {
+    id: crypto.randomUUID(),
+    name: input.name.trim(),
+    special_id: input.specialId.trim(),
+    qr_value: input.qrValue.trim(),
+    job_type_name: input.jobTypeName?.trim() || null,
+  };
+
+  return supabasePost("/buildings", payload);
+}
+
+export async function deleteBuildingInSupabase(buildingId: string) {
+  return supabaseDelete(`/buildings?id=eq.${encodeURIComponent(buildingId)}`);
 }
 
 // Waste Management Functions

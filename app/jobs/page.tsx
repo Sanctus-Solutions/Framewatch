@@ -1,16 +1,200 @@
 import Link from "next/link";
-import { fetchInventoryLogsFromSupabase } from "../src/lib/supabase";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import {
+  createBuildingInSupabase,
+  createInventoryLogInSupabase,
+  deleteInventoryLogInSupabase,
+  deleteInventoryLogsByJobNameInSupabase,
+  fetchBuildingsFromSupabase,
+  fetchInventoryLogsFromSupabase,
+  fetchMaterialsFromSupabase,
+} from "../src/lib/supabase";
+import { JobUsageForm } from "../src/components/jobs/job-usage-form";
+import { JobStandardComparison } from "../src/components/jobs/job-standard-comparison";
+
+function buildSpecialId() {
+  return `BLD-${crypto.randomUUID().split("-")[0].toUpperCase()}`;
+}
+
+function buildBuildingQrValue(specialId: string, name: string) {
+  return `FW-BLD:${specialId}:${name.trim()}`;
+}
 
 type JobSummary = {
   jobName: string;
-  totalEntries: number;
-  totalQuantityMoved: number;
-  wasteQuantity: number;
-  salvagedQuantity: number;
+  totalUsageEntries: number;
+  totalSuppliesUsed: number;
+  supplies: Array<{
+    materialId: string;
+    materialName: string;
+    quantityUsed: number;
+  }>;
+  entries: Array<{
+    id: string;
+    materialName: string;
+    quantityUsed: number;
+    createdAt: string;
+    note?: string;
+  }>;
 };
 
-export default async function JobsPage() {
-  const { data: logs, error } = await fetchInventoryLogsFromSupabase();
+async function logJobSupplyUsageAction(formData: FormData) {
+  "use server";
+
+  const jobName = String(formData.get("job_name") ?? "").trim();
+  const materialIds = formData
+    .getAll("material_id")
+    .map((value) => String(value ?? "").trim());
+  const quantities = formData
+    .getAll("quantity")
+    .map((value) => Number(String(value ?? "").trim()));
+  const notes = formData
+    .getAll("note")
+    .map((value) => String(value ?? "").trim());
+
+  if (!jobName) {
+    redirect("/jobs?status=validation");
+  }
+
+  const maxRows = Math.max(materialIds.length, quantities.length, notes.length);
+  const usageRows: Array<{ materialId: string; quantity: number; note?: string }> = [];
+
+  for (let i = 0; i < maxRows; i += 1) {
+    const materialId = materialIds[i] ?? "";
+    const quantity = quantities[i];
+    const note = notes[i] ?? "";
+
+    const hasMaterial = Boolean(materialId);
+    const hasQuantity = !Number.isNaN(quantity) && quantity > 0;
+
+    // If row is partially filled, require both material and quantity.
+    if ((hasMaterial && !hasQuantity) || (!hasMaterial && hasQuantity)) {
+      redirect("/jobs?status=validation");
+    }
+
+    if (!hasMaterial && !hasQuantity) {
+      continue;
+    }
+
+    usageRows.push({
+      materialId,
+      quantity: -Math.abs(quantity),
+      ...(note ? { note } : {}),
+    });
+  }
+
+  if (usageRows.length === 0) {
+    redirect("/jobs?status=validation");
+  }
+
+  // Keep Buildings synced with Jobs: if this building name does not exist yet,
+  // create it so the generated special ID and QR can be used later.
+  const { data: existingBuildings, error: buildingFetchError } = await fetchBuildingsFromSupabase();
+  if (buildingFetchError) {
+    redirect(`/jobs?status=error&message=${encodeURIComponent(buildingFetchError)}`);
+  }
+
+  const hasBuilding = existingBuildings.some(
+    (building) => building.name.trim().toLowerCase() === jobName.toLowerCase(),
+  );
+
+  if (!hasBuilding) {
+    const specialId = buildSpecialId();
+    const qrValue = buildBuildingQrValue(specialId, jobName);
+    const createBuildingResult = await createBuildingInSupabase({
+      name: jobName,
+      specialId,
+      qrValue,
+    });
+
+    if (createBuildingResult.error) {
+      redirect(`/jobs?status=error&message=${encodeURIComponent(createBuildingResult.error)}`);
+    }
+  }
+
+  for (const row of usageRows) {
+    const result = await createInventoryLogInSupabase({
+      materialId: row.materialId,
+      action: "out",
+      // Usage should reduce inventory, so this is stored as a negative movement.
+      quantity: row.quantity,
+      jobName,
+      ...(row.note ? { note: row.note } : {}),
+    });
+
+    if (result.error) {
+      redirect(`/jobs?status=error&message=${encodeURIComponent(result.error)}`);
+    }
+  }
+
+  revalidatePath("/jobs");
+  revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+  revalidatePath("/buildings");
+  redirect("/jobs?status=success");
+}
+
+async function deleteJobUsageEntryAction(formData: FormData) {
+  "use server";
+
+  const logId = String(formData.get("log_id") ?? "").trim();
+  if (!logId) {
+    redirect("/jobs?status=error&message=Missing usage entry ID");
+  }
+
+  const result = await deleteInventoryLogInSupabase(logId);
+  if (result.error) {
+    redirect(`/jobs?status=error&message=${encodeURIComponent(result.error)}`);
+  }
+
+  revalidatePath("/jobs");
+  revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+  redirect("/jobs?status=deleted");
+}
+
+async function deleteJobUsageProjectAction(formData: FormData) {
+  "use server";
+
+  const jobName = String(formData.get("job_name") ?? "").trim();
+  if (!jobName) {
+    redirect("/jobs?status=error&message=Missing job name");
+  }
+
+  const result = await deleteInventoryLogsByJobNameInSupabase(jobName);
+  if (result.error) {
+    redirect(`/jobs?status=error&message=${encodeURIComponent(result.error)}`);
+  }
+
+  revalidatePath("/jobs");
+  revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+  redirect("/jobs?status=deleted-project");
+}
+
+type JobsPageProps = {
+  searchParams?: {
+    status?: string;
+    message?: string;
+  };
+};
+
+export default async function JobsPage({ searchParams }: JobsPageProps) {
+  const params = searchParams ?? {};
+  const [{ data: logs, error }, { data: materials }, { data: buildings }] = await Promise.all([
+    fetchInventoryLogsFromSupabase(),
+    fetchMaterialsFromSupabase(),
+    fetchBuildingsFromSupabase(),
+  ]);
+
+  const materialById = materials.reduce<Record<string, { name: string }>>(
+    (acc, material) => {
+      acc[material.id] = { name: material.name };
+      return acc;
+    },
+    {},
+  );
 
   const jobSummaries = Object.values(
     logs.reduce<Record<string, JobSummary>>((acc, log) => {
@@ -20,30 +204,58 @@ export default async function JobsPage() {
         return acc;
       }
 
+      const usedQuantity = log.quantity < 0 ? Math.abs(log.quantity) : 0;
+      if (usedQuantity === 0) {
+        return acc;
+      }
+
       if (!acc[jobName]) {
         acc[jobName] = {
           jobName,
-          totalEntries: 0,
-          totalQuantityMoved: 0,
-          wasteQuantity: 0,
-          salvagedQuantity: 0,
+          totalUsageEntries: 0,
+          totalSuppliesUsed: 0,
+          supplies: [],
+          entries: [],
         };
       }
 
-      acc[jobName].totalEntries += 1;
-      acc[jobName].totalQuantityMoved += log.quantity;
+      acc[jobName].totalUsageEntries += 1;
+      acc[jobName].totalSuppliesUsed += usedQuantity;
 
-      if (log.action === "waste") {
-        acc[jobName].wasteQuantity += log.quantity;
+      const existingSupply = acc[jobName].supplies.find(
+        (supply) => supply.materialId === log.materialId,
+      );
+
+      if (existingSupply) {
+        existingSupply.quantityUsed += usedQuantity;
+      } else {
+        const material = materialById[log.materialId];
+        acc[jobName].supplies.push({
+          materialId: log.materialId,
+          materialName: material?.name ?? "Unknown Material",
+          quantityUsed: usedQuantity,
+        });
       }
 
-      if (log.action === "salvaged") {
-        acc[jobName].salvagedQuantity += log.quantity;
-      }
+      acc[jobName].entries.push({
+        id: log.id,
+        materialName: materialById[log.materialId]?.name ?? "Unknown Material",
+        quantityUsed: usedQuantity,
+        createdAt: log.createdAt,
+        ...(log.note ? { note: log.note } : {}),
+      });
 
       return acc;
     }, {}),
-  ).sort((a, b) => b.totalQuantityMoved - a.totalQuantityMoved);
+  )
+    .map((job) => ({
+      ...job,
+      supplies: [...job.supplies].sort((a, b) => b.quantityUsed - a.quantityUsed),
+      entries: [...job.entries]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 12),
+    }))
+    .sort((a, b) => b.totalSuppliesUsed - a.totalSuppliesUsed);
 
   return (
     <main className="min-h-screen bg-[#050914] text-white">
@@ -53,14 +265,15 @@ export default async function JobsPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
               Jobs
             </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight">Activity by build/job</h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight">
+              Track supplies used per job
+            </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-              Grouped job-level material activity sourced from Supabase inventory logs for the
-              Tuckertown Buildings MVP.
+              Store what materials were used on each build and how many were consumed.
             </p>
             {error ? (
               <p className="mt-3 text-sm text-amber-200">
-                Unable to load job summaries from Supabase. {error}
+                Unable to load job activity from Supabase. {error}
               </p>
             ) : null}
           </div>
@@ -73,15 +286,85 @@ export default async function JobsPage() {
           </Link>
         </div>
 
+        <div className="mt-4">
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/job-types"
+              className="inline-flex rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-[#111a2f]"
+            >
+              Open Job Types
+            </Link>
+            <Link
+              href="/buildings"
+              className="inline-flex rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-[#111a2f]"
+            >
+              Open Buildings
+            </Link>
+            <Link
+              href="/jobs/standards"
+              className="inline-flex rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-[#111a2f]"
+            >
+              Open Job Standards
+            </Link>
+          </div>
+        </div>
+
         <div className="mt-10 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
-          <h2 className="text-xl font-semibold">Job activity summary</h2>
+          <h2 className="text-xl font-semibold">Log supplies used on a job</h2>
+          <p className="mt-2 text-sm text-slate-300">
+            Record multiple material and quantity sets in one submit.
+          </p>
+
+          {params.status === "success" ? (
+            <p className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+              Job usage entry saved.
+            </p>
+          ) : null}
+
+          {params.status === "deleted" ? (
+            <p className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+              Job usage entry deleted.
+            </p>
+          ) : null}
+
+          {params.status === "deleted-project" ? (
+            <p className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+              Finished project usage entries deleted.
+            </p>
+          ) : null}
+
+          {params.status === "validation" ? (
+            <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              Job name is required. For each filled row, include both material and quantity greater
+              than zero.
+            </p>
+          ) : null}
+
+          {params.status === "error" ? (
+            <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              Unable to save entry. {params.message ?? "Please try again."}
+            </p>
+          ) : null}
+
+          <JobUsageForm
+            action={logJobSupplyUsageAction}
+            materials={materials.map((material) => ({
+              id: material.id,
+              name: material.name,
+              sku: material.sku,
+            }))}
+            buildings={buildings}
+          />
+        </div>
+
+        <div className="mt-10 rounded-2xl border border-cyan-500/20 bg-[#0c1426]/80 p-6">
+          <h2 className="text-xl font-semibold">Job supply usage summary</h2>
 
           {jobSummaries.length === 0 ? (
             <div className="mt-4 rounded-xl border border-cyan-500/20 bg-[#050914] p-6">
-              <p className="text-base font-medium text-white">No job activity yet.</p>
+              <p className="text-base font-medium text-white">No usage entries yet.</p>
               <p className="mt-2 text-sm text-slate-300">
-                Add job names to inventory logs to view usage, waste, and salvage by
-                build/job.
+                Add a job usage entry above to track supplies consumed by job.
               </p>
             </div>
           ) : (
@@ -93,29 +376,84 @@ export default async function JobsPage() {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-lg font-semibold text-white">{job.jobName}</p>
-                    <p className="text-sm text-slate-300">
-                      Total quantity moved: {job.totalQuantityMoved}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-sm text-slate-300">
+                        Total supplies used: {job.totalSuppliesUsed}
+                      </p>
+                      <form action={deleteJobUsageProjectAction}>
+                        <input type="hidden" name="job_name" value={job.jobName} />
+                        <button
+                          type="submit"
+                          className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/20"
+                        >
+                          Delete Project Entries
+                        </button>
+                      </form>
+                    </div>
                   </div>
 
-                  <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-lg border border-cyan-500/20 bg-[#111a2f]/80 px-3 py-2">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">Logged entries</p>
-                      <p className="mt-1 text-lg font-bold text-white">{job.totalEntries}</p>
-                    </div>
-                    <div className="rounded-lg border border-cyan-500/20 bg-[#111a2f]/80 px-3 py-2">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">Quantity moved</p>
-                      <p className="mt-1 text-lg font-bold text-white">{job.totalQuantityMoved}</p>
-                    </div>
-                    <div className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
-                      <p className="text-xs uppercase tracking-wide text-cyan-200">Waste quantity</p>
-                      <p className="mt-1 text-lg font-bold text-cyan-100">{job.wasteQuantity}</p>
-                    </div>
-                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
-                      <p className="text-xs uppercase tracking-wide text-emerald-300">
-                        Salvaged quantity
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Usage entries
                       </p>
-                      <p className="mt-1 text-lg font-bold text-emerald-200">{job.salvagedQuantity}</p>
+                      <p className="mt-1 text-lg font-bold text-white">{job.totalUsageEntries}</p>
+                    </div>
+                    <div className="rounded-lg border border-cyan-500/20 bg-[#111a2f]/80 px-3 py-2">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Total supplies used
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-white">{job.totalSuppliesUsed}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-400">
+                      Supplies used by type
+                    </p>
+                    <div className="mt-2 grid gap-2">
+                      {job.supplies.map((supply) => (
+                        <div
+                          key={`${job.jobName}-${supply.materialId}`}
+                          className="flex items-center justify-between rounded-lg border border-cyan-500/20 bg-[#111a2f]/80 px-3 py-2 text-sm"
+                        >
+                          <p className="font-medium text-white">{supply.materialName}</p>
+                          <p className="text-slate-300">{supply.quantityUsed} items</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-400">
+                      Usage entries (latest)
+                    </p>
+                    <div className="mt-2 grid gap-2">
+                      {job.entries.map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-cyan-500/20 bg-[#111a2f]/80 px-3 py-2 text-sm"
+                        >
+                          <div>
+                            <p className="font-medium text-white">
+                              {entry.materialName} • {entry.quantityUsed} items
+                            </p>
+                            <p className="mt-1 text-xs text-slate-400">
+                              {new Date(entry.createdAt).toLocaleString()}
+                              {entry.note ? ` • ${entry.note}` : ""}
+                            </p>
+                          </div>
+                          <form action={deleteJobUsageEntryAction}>
+                            <input type="hidden" name="log_id" value={entry.id} />
+                            <button
+                              type="submit"
+                              className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/20"
+                            >
+                              Delete
+                            </button>
+                          </form>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -123,6 +461,20 @@ export default async function JobsPage() {
             </div>
           )}
         </div>
+
+        <JobStandardComparison
+          materials={materials.map((material) => ({
+            id: material.id,
+            name: material.name,
+            sku: material.sku,
+          }))}
+          completedJobs={jobSummaries.map((job) => ({
+            jobName: job.jobName,
+            totalSuppliesUsed: job.totalSuppliesUsed,
+            totalUsageEntries: job.totalUsageEntries,
+            supplies: job.supplies,
+          }))}
+        />
       </section>
     </main>
   );

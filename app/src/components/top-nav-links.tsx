@@ -19,6 +19,9 @@ const secondaryNavItems = [
   { href: "/categories", label: "Categories" },
   { href: "/units", label: "Units" },
   { href: "/jobs", label: "Jobs" },
+  { href: "/job-types", label: "Job Types" },
+  { href: "/buildings", label: "Buildings" },
+  { href: "/jobs/standards", label: "Job Standards" },
   { href: "/reports", label: "Reports" },
 ];
 
@@ -41,7 +44,11 @@ export function TopNavLinks({ currentPath }: TopNavLinksProps) {
     href === currentPath || 
     (href === "/materials" && currentPath.startsWith("/materials/")) || 
     (href === "/categories" && currentPath.startsWith("/categories/")) ||
-    (href === "/units" && currentPath.startsWith("/units/"));
+    (href === "/units" && currentPath.startsWith("/units/")) ||
+    (href === "/jobs" && currentPath.startsWith("/jobs/") && !currentPath.startsWith("/jobs/standards")) ||
+    (href === "/job-types" && currentPath.startsWith("/job-types")) ||
+    (href === "/buildings" && currentPath.startsWith("/buildings")) ||
+    (href === "/jobs/standards" && currentPath.startsWith("/jobs/standards"));
 
   const navButtonClassName = (isActive: boolean) =>
     `inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold transition ${
