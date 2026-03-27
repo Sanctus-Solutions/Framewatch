@@ -60,19 +60,30 @@ async function verifySessionToken(token: string) {
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const sessionCookie = request.cookies.get(SESSION_TOKEN);
+  const hasValidSession = Boolean(
+    sessionCookie && (await verifySessionToken(sessionCookie.value))
+  );
+
+  // If already authenticated, don't allow lingering on /login.
+  if (pathname === "/login" && hasValidSession) {
+    const homeUrl = new URL("/", request.url);
+    const response = NextResponse.redirect(homeUrl);
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return response;
+  }
 
   // Allow public routes
   if (PUBLIC_ROUTES.includes(pathname)) {
     return NextResponse.next();
   }
 
-  // Check for signed session cookie
-  const sessionCookie = request.cookies.get(SESSION_TOKEN);
-
   // If no valid session, redirect to login
-  if (!sessionCookie || !(await verifySessionToken(sessionCookie.value))) {
+  if (!hasValidSession) {
     const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return response;
   }
 
   return NextResponse.next();

@@ -19,6 +19,8 @@ export default function LoginPage() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        cache: "no-store",
         body: JSON.stringify({ username, password }),
       });
 
@@ -29,8 +31,10 @@ export default function LoginPage() {
         return;
       }
 
-      // Login successful, redirect to home
-      router.push("/");
+      // Force a fresh navigation so middleware re-checks the new cookie immediately.
+      router.replace("/");
+      router.refresh();
+      window.location.assign("/");
     } catch (err) {
       setError("An error occurred. Please try again.");
     } finally {
