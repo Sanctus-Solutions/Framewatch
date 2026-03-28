@@ -137,6 +137,13 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
       { table: "used_materials_logs", records: stripIds(data.used_materials_logs || []) },
     ];
 
+    console.log("Import started with data:", {
+      units: data.units?.length || 0,
+      buildings: data.buildings?.length || 0,
+      materials: data.materials?.length || 0,
+      inventory_logs: data.inventory_logs?.length || 0,
+    });
+
     const failedTables: string[] = [];
     let importedCount = 0;
 
@@ -147,8 +154,13 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
         continue;
       }
 
+      console.log(`Attempting to insert ${records.length} records into ${table}`);
+
       try {
-        const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
+        const url = `${supabaseUrl}/rest/v1/${table}`;
+        console.log(`Making POST request to: ${url}`);
+        
+        const response = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
