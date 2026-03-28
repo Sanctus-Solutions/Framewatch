@@ -118,29 +118,37 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
 
     // Helper: map exported camelCase fields to actual DB snake_case columns
     const mapUnits = (records: any[]): any[] =>
-      records.map(r => (typeof r === "string" ? { name: r } : { name: r.name }));
+      records.map(r => {
+        const name = typeof r === "string" ? r : r.name;
+        return { id: crypto.randomUUID(), name };
+      });
 
     const mapBuildings = (records: any[]): any[] =>
       records.map(r => ({
+        id: crypto.randomUUID(),
         name: r.name,
-        ...(r.special_id || r.specialId ? { special_id: r.special_id || r.specialId } : {}),
-        ...(r.qr_value || r.qrValue ? { qr_value: r.qr_value || r.qrValue } : {}),
-        ...(r.job_type_name || r.jobTypeName ? { job_type_name: r.job_type_name || r.jobTypeName } : {}),
+        special_id: r.special_id || r.specialId || null,
+        qr_value: r.qr_value || r.qrValue || null,
+        job_type_name: r.job_type_name || r.jobTypeName || null,
       }));
 
     const mapCategories = (records: any[]): any[] =>
-      records.map(r => (typeof r === "string" ? { name: r } : { name: r.name, ...(r.unit_name ? { unit_name: r.unit_name } : {}) }));
+      records.map(r => {
+        const name = typeof r === "string" ? r : r.name;
+        return { id: crypto.randomUUID(), name, unit_name: (typeof r === "object" && r.unit_name) ? r.unit_name : null };
+      });
 
     const mapMaterials = (records: any[]): any[] =>
       records.map(r => ({
+        id: crypto.randomUUID(),
         name: r.name,
         sku: r.sku,
         category: r.category,
         unit: r.unit,
         active: r.active ?? true,
-        ...(r.color ? { color: r.color } : {}),
-        ...(r.scan_code || r.scanCode ? { scan_code: r.scan_code || r.scanCode } : {}),
-        ...(r.qr_code || r.qrCode ? { qr_code: r.qr_code || r.qrCode } : {}),
+        color: r.color || null,
+        scan_code: r.scan_code || r.scanCode || null,
+        qr_code: r.qr_code || r.qrCode || null,
       }));
 
     const mapConversions = (records: any[]): any[] =>
@@ -148,42 +156,45 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
         source_unit: r.source_unit || r.sourceUnit,
         target_unit: r.target_unit || r.targetUnit,
         conversion_factor: r.conversion_factor || r.conversionFactor,
-        ...(r.description ? { description: r.description } : {}),
+        description: r.description || null,
       }));
 
     const mapInventoryLogs = (records: any[]): any[] =>
       records.map(r => ({
+        id: crypto.randomUUID(),
         material_id: r.material_id || r.materialId,
         action: r.action,
         quantity: r.quantity,
-        ...(r.job_name || r.jobName ? { job_name: r.job_name || r.jobName } : {}),
-        ...(r.note ? { note: r.note } : {}),
+        job_name: r.job_name || r.jobName || null,
+        note: r.note || null,
       }));
 
     const mapWasteLogs = (records: any[]): any[] =>
       records.map(r => ({
+        id: crypto.randomUUID(),
         material_id: r.material_id || r.materialId,
         quantity: r.quantity,
-        ...(r.reason ? { reason: r.reason } : {}),
-        ...(r.note ? { note: r.note } : {}),
-        ...(r.job_name || r.jobName ? { job_name: r.job_name || r.jobName } : {}),
+        reason: r.reason || null,
+        note: r.note || null,
+        job_name: r.job_name || r.jobName || null,
       }));
 
     const mapUsedMaterialLogs = (records: any[]): any[] =>
       records.map(r => ({
+        id: crypto.randomUUID(),
         material_id: r.material_id || r.materialId,
         quantity: r.quantity,
         size: r.size,
         unit: r.unit,
-        ...(r.job_name || r.jobName ? { job_name: r.job_name || r.jobName } : {}),
-        ...(r.note ? { note: r.note } : {}),
+        job_name: r.job_name || r.jobName || null,
+        note: r.note || null,
       }));
 
     const importOrder = [
       { table: "units", records: mapUnits(data.units || []) },
       { table: "buildings", records: mapBuildings(data.buildings || []) },
       { table: "categories", records: mapCategories(data.categories || []) },
-      { table: "job_types", records: data.job_types || [] },
+      { table: "job_types", records: (data.job_types || []).map((r: any) => ({ name: r.name, description: r.description || null })) },
       { table: "materials", records: mapMaterials(data.materials || []) },
       { table: "unit_conversions", records: mapConversions(data.unit_conversions || []) },
       { table: "inventory_logs", records: mapInventoryLogs(data.inventory_logs || []) },
