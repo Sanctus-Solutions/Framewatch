@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { exportAllDataAsJSON, resetAllData, importDataFromJSON } from "../../src/actions/data-export";
+import { exportAllDataAsJSON, resetAllData, importDataFromJSON } from "../actions/data-export";
 
 export function DataExportImport() {
   const [isExporting, setIsExporting] = useState(false);
