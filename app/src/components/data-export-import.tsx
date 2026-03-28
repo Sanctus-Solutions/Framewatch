@@ -3,12 +3,31 @@
 import { useState } from "react";
 import { exportAllDataAsJSON, resetAllData, importDataFromJSON } from "../actions/data-export";
 
+type BackupContentsSummary = {
+  materials: number;
+  inventory_logs: number;
+  waste_logs: number;
+  used_materials_logs: number;
+  units: number;
+  categories: number;
+  job_types: number;
+  buildings: number;
+  unit_conversions: number;
+  job_standards: number;
+  source: "export" | "import";
+};
+
 export function DataExportImport() {
   const [isExporting, setIsExporting] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [backupSummary, setBackupSummary] = useState<BackupContentsSummary | null>(null);
+  const JOB_STANDARDS_STORAGE_KEY = "framewatch_job_standards_v1";
+
+  const getRecordCount = (table: unknown): number =>
+    Array.isArray(table) ? table.length : 0;
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -21,13 +40,49 @@ export function DataExportImport() {
         return;
       }
 
+      // Wrap raw table data with metadata so backups are traceable during migration.
+      const backupEnvelope = {
+        backup_version: "1",
+        company: "Tuckertown Buildings",
+        exported_at: new Date().toISOString(),
+        source: "FrameWatch MVP",
+        client_config: {
+          job_standards: (() => {
+            try {
+              const raw = window.localStorage.getItem(JOB_STANDARDS_STORAGE_KEY);
+              return raw ? JSON.parse(raw) : [];
+            } catch {
+              return [];
+            }
+          })(),
+        },
+        record_counts: {
+          materials: getRecordCount(data.materials),
+          inventory_logs: getRecordCount(data.inventory_logs),
+          waste_logs: getRecordCount(data.waste_logs),
+          used_materials_logs: getRecordCount(data.used_materials_logs),
+          units: getRecordCount(data.units),
+          categories: getRecordCount(data.categories),
+          job_types: getRecordCount(data.job_types),
+          buildings: getRecordCount(data.buildings),
+          unit_conversions: getRecordCount(data.unit_conversions),
+        },
+        data,
+      };
+
+      setBackupSummary({
+        ...backupEnvelope.record_counts,
+        job_standards: getRecordCount(backupEnvelope.client_config.job_standards),
+        source: "export",
+      });
+
       // Create JSON file
-      const jsonString = JSON.stringify(data, null, 2);
+      const jsonString = JSON.stringify(backupEnvelope, null, 2);
       const blob = new Blob([jsonString], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `framewatch-export-${new Date().toISOString().split("T")[0]}.json`;
+      link.download = `framewatch-tuckertown-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -49,7 +104,43 @@ export function DataExportImport() {
     setUploadStatus("loading");
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      const parsed = JSON.parse(text);
+      const data = parsed?.data && typeof parsed.data === "object" ? parsed.data : parsed;
+
+      const parsedJobStandards = parsed?.client_config?.job_standards;
+      const jobStandardsCount = Array.isArray(parsedJobStandards)
+        ? parsedJobStandards.length
+        : (() => {
+            try {
+              const local = window.localStorage.getItem(JOB_STANDARDS_STORAGE_KEY);
+              const parsedLocal = local ? JSON.parse(local) : [];
+              return Array.isArray(parsedLocal) ? parsedLocal.length : 0;
+            } catch {
+              return 0;
+            }
+          })();
+
+      setBackupSummary({
+        materials: getRecordCount(data.materials),
+        inventory_logs: getRecordCount(data.inventory_logs),
+        waste_logs: getRecordCount(data.waste_logs),
+        used_materials_logs: getRecordCount(data.used_materials_logs),
+        units: getRecordCount(data.units),
+        categories: getRecordCount(data.categories),
+        job_types: getRecordCount(data.job_types),
+        buildings: getRecordCount(data.buildings),
+        unit_conversions: getRecordCount(data.unit_conversions),
+        job_standards: jobStandardsCount,
+        source: "import",
+      });
+
+      // Restore browser-side configuration data when present.
+      if (parsed?.client_config?.job_standards) {
+        window.localStorage.setItem(
+          JOB_STANDARDS_STORAGE_KEY,
+          JSON.stringify(parsed.client_config.job_standards),
+        );
+      }
       
       // Validate structure
       const requiredTables = [
@@ -170,11 +261,34 @@ export function DataExportImport() {
         <h4 className="font-semibold text-blue-200 mb-2">Migration Ready</h4>
         <ul className="space-y-1 text-sm text-slate-300">
           <li>✓ Export captures all current data</li>
-          <li>✓ JSON format is migration-ready for multi-tenant</li>
-          <li>✓ Each table includes all records with original IDs</li>
-          <li>✓ When migrating, company_id will be added automatically</li>
+          <li>✓ Backup includes export timestamp and company metadata</li>
+          <li>✓ Backup includes browser-stored job standards config</li>
+          <li>✓ Import accepts both legacy raw JSON and new backup envelope format</li>
+          <li>✓ JSON format is migration-ready for future multi-tenant rollout</li>
+          <li>✓ Store this file off-device (Drive, OneDrive, Dropbox) for safekeeping</li>
         </ul>
       </div>
+
+      {backupSummary ? (
+        <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/10 p-6">
+          <h4 className="font-semibold text-emerald-200 mb-2">Backup Contents</h4>
+          <p className="mb-3 text-xs uppercase tracking-wide text-emerald-300">
+            Source: {backupSummary.source === "export" ? "Latest export" : "Latest import file"}
+          </p>
+          <div className="grid grid-cols-1 gap-2 text-sm text-slate-200 sm:grid-cols-2">
+            <p>Materials: {backupSummary.materials}</p>
+            <p>Inventory Logs: {backupSummary.inventory_logs}</p>
+            <p>Waste Logs: {backupSummary.waste_logs}</p>
+            <p>Used Material Logs: {backupSummary.used_materials_logs}</p>
+            <p>Units: {backupSummary.units}</p>
+            <p>Categories: {backupSummary.categories}</p>
+            <p>Job Types: {backupSummary.job_types}</p>
+            <p>Buildings: {backupSummary.buildings}</p>
+            <p>Unit Conversions: {backupSummary.unit_conversions}</p>
+            <p>Job Standards (Browser Config): {backupSummary.job_standards}</p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Reset Section */}
       {!showResetConfirm ? (

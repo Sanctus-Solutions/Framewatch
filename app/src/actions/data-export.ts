@@ -7,6 +7,7 @@ import {
   fetchUsedMaterialLogsFromSupabase,
   fetchUnitsFromSupabase,
   fetchCategoriesFromSupabase,
+  fetchCategoriesWithUnitsFromSupabase,
   fetchJobTypesFromSupabase,
   fetchBuildingsFromSupabase,
   fetchUnitConversionsFromSupabase,
@@ -27,6 +28,33 @@ type ExportData = {
 
 export async function exportAllDataAsJSON(): Promise<ExportData | null> {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    const fetchRawTable = async <T>(table: string, columns: string): Promise<T[]> => {
+      if (!supabaseUrl || !supabaseAnonKey) {
+        return [];
+      }
+
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/${table}?select=${encodeURIComponent(columns)}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseAnonKey,
+            Authorization: `Bearer ${supabaseAnonKey}`,
+          },
+          cache: "no-store",
+        },
+      );
+
+      if (!response.ok) {
+        return [];
+      }
+
+      return (await response.json()) as T[];
+    };
+
     const [
       materials,
       inventoryLogs,
@@ -34,9 +62,11 @@ export async function exportAllDataAsJSON(): Promise<ExportData | null> {
       usedMaterialLogs,
       units,
       categories,
+      categoriesWithUnits,
       jobTypes,
       buildings,
       conversions,
+      unitsRaw,
     ] = await Promise.all([
       fetchMaterialsFromSupabase(),
       fetchInventoryLogsFromSupabase(),
@@ -44,9 +74,14 @@ export async function exportAllDataAsJSON(): Promise<ExportData | null> {
       fetchUsedMaterialLogsFromSupabase(),
       fetchUnitsFromSupabase(),
       fetchCategoriesFromSupabase(),
+      fetchCategoriesWithUnitsFromSupabase(),
       fetchJobTypesFromSupabase(),
       fetchBuildingsFromSupabase(),
       fetchUnitConversionsFromSupabase(),
+      fetchRawTable<{ id: string; name: string; description?: string | null }>(
+        "units",
+        "id,name,description",
+      ),
     ]);
 
     return {
@@ -54,8 +89,16 @@ export async function exportAllDataAsJSON(): Promise<ExportData | null> {
       inventory_logs: inventoryLogs.data || [],
       waste_logs: wasteLogs.data || [],
       used_materials_logs: usedMaterialLogs.data || [],
-      units: units.data ? units.data.map((u) => ({ name: u })) : [],
-      categories: categories.data || [],
+      units:
+        unitsRaw.length > 0
+          ? unitsRaw.map((u) => ({ name: u.name, description: u.description ?? null }))
+          : units.data
+            ? units.data.map((u) => ({ name: u }))
+            : [],
+      categories:
+        categoriesWithUnits.data && categoriesWithUnits.data.length > 0
+          ? categoriesWithUnits.data
+          : categories.data || [],
       job_types: jobTypes.data || [],
       buildings: buildings.data || [],
       unit_conversions: conversions.data || [],
@@ -120,7 +163,8 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
     const mapUnits = (records: any[]): any[] =>
       records.map(r => {
         const name = typeof r === "string" ? r : r.name;
-        return { id: crypto.randomUUID(), name };
+        const description = typeof r === "object" ? (r.description ?? null) : null;
+        return { id: crypto.randomUUID(), name, description };
       });
 
     const mapBuildings = (records: any[]): any[] =>
@@ -135,7 +179,12 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
     const mapCategories = (records: any[]): any[] =>
       records.map(r => {
         const name = typeof r === "string" ? r : r.name;
-        return { id: crypto.randomUUID(), name, unit_name: (typeof r === "object" && r.unit_name) ? r.unit_name : null };
+        return {
+          id: crypto.randomUUID(),
+          name,
+          unit_name: (typeof r === "object" && r.unit_name) ? r.unit_name : null,
+          description: (typeof r === "object" && r.description) ? r.description : null,
+        };
       });
 
     const mapMaterials = (records: any[]): any[] =>
