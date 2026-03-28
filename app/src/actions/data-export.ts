@@ -116,31 +116,79 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
       return { success: false, message: "Supabase configuration missing" };
     }
 
-    // Helper function to clean records for import
-    // Strips IDs, timestamps, and camelCase aliases that aren't real DB columns
-    const cleanRecords = (records: any[], validColumns: string[]): any[] => {
-      if (!Array.isArray(records)) return [];
-      return records.map(record => {
-        const cleaned: any = {};
-        for (const col of validColumns) {
-          if (record[col] !== undefined) {
-            cleaned[col] = record[col];
-          }
-        }
-        return cleaned;
-      });
-    };
+    // Helper: map exported camelCase fields to actual DB snake_case columns
+    const mapUnits = (records: any[]): any[] =>
+      records.map(r => (typeof r === "string" ? { name: r } : { name: r.name }));
+
+    const mapBuildings = (records: any[]): any[] =>
+      records.map(r => ({
+        name: r.name,
+        ...(r.special_id || r.specialId ? { special_id: r.special_id || r.specialId } : {}),
+        ...(r.qr_value || r.qrValue ? { qr_value: r.qr_value || r.qrValue } : {}),
+        ...(r.job_type_name || r.jobTypeName ? { job_type_name: r.job_type_name || r.jobTypeName } : {}),
+      }));
+
+    const mapCategories = (records: any[]): any[] =>
+      records.map(r => (typeof r === "string" ? { name: r } : { name: r.name, ...(r.unit_name ? { unit_name: r.unit_name } : {}) }));
+
+    const mapMaterials = (records: any[]): any[] =>
+      records.map(r => ({
+        name: r.name,
+        sku: r.sku,
+        category: r.category,
+        unit: r.unit,
+        active: r.active ?? true,
+        ...(r.color ? { color: r.color } : {}),
+        ...(r.scan_code || r.scanCode ? { scan_code: r.scan_code || r.scanCode } : {}),
+        ...(r.qr_code || r.qrCode ? { qr_code: r.qr_code || r.qrCode } : {}),
+      }));
+
+    const mapConversions = (records: any[]): any[] =>
+      records.map(r => ({
+        source_unit: r.source_unit || r.sourceUnit,
+        target_unit: r.target_unit || r.targetUnit,
+        conversion_factor: r.conversion_factor || r.conversionFactor,
+        ...(r.description ? { description: r.description } : {}),
+      }));
+
+    const mapInventoryLogs = (records: any[]): any[] =>
+      records.map(r => ({
+        material_id: r.material_id || r.materialId,
+        action: r.action,
+        quantity: r.quantity,
+        ...(r.job_name || r.jobName ? { job_name: r.job_name || r.jobName } : {}),
+        ...(r.note ? { note: r.note } : {}),
+      }));
+
+    const mapWasteLogs = (records: any[]): any[] =>
+      records.map(r => ({
+        material_id: r.material_id || r.materialId,
+        quantity: r.quantity,
+        ...(r.reason ? { reason: r.reason } : {}),
+        ...(r.note ? { note: r.note } : {}),
+        ...(r.job_name || r.jobName ? { job_name: r.job_name || r.jobName } : {}),
+      }));
+
+    const mapUsedMaterialLogs = (records: any[]): any[] =>
+      records.map(r => ({
+        material_id: r.material_id || r.materialId,
+        quantity: r.quantity,
+        size: r.size,
+        unit: r.unit,
+        ...(r.job_name || r.jobName ? { job_name: r.job_name || r.jobName } : {}),
+        ...(r.note ? { note: r.note } : {}),
+      }));
 
     const importOrder = [
-      { table: "units", records: cleanRecords(data.units || [], ["name"]) },
-      { table: "buildings", records: cleanRecords(data.buildings || [], ["name", "address", "description"]) },
-      { table: "categories", records: cleanRecords(data.categories || [], ["name", "unit_name"]) },
-      { table: "job_types", records: cleanRecords(data.job_types || [], ["name", "description"]) },
-      { table: "materials", records: cleanRecords(data.materials || [], ["name", "sku", "category", "unit", "color", "active", "scan_code", "qr_code"]) },
-      { table: "unit_conversions", records: cleanRecords(data.unit_conversions || [], ["source_unit", "target_unit", "conversion_factor", "description"]) },
-      { table: "inventory_logs", records: cleanRecords(data.inventory_logs || [], ["material_id", "action", "quantity", "job_name", "note"]) },
-      { table: "waste_logs", records: cleanRecords(data.waste_logs || [], ["material_id", "quantity", "reason", "note", "job_name"]) },
-      { table: "used_materials_logs", records: cleanRecords(data.used_materials_logs || [], ["material_id", "quantity", "size", "unit", "note", "job_name"]) },
+      { table: "units", records: mapUnits(data.units || []) },
+      { table: "buildings", records: mapBuildings(data.buildings || []) },
+      { table: "categories", records: mapCategories(data.categories || []) },
+      { table: "job_types", records: data.job_types || [] },
+      { table: "materials", records: mapMaterials(data.materials || []) },
+      { table: "unit_conversions", records: mapConversions(data.unit_conversions || []) },
+      { table: "inventory_logs", records: mapInventoryLogs(data.inventory_logs || []) },
+      { table: "waste_logs", records: mapWasteLogs(data.waste_logs || []) },
+      { table: "used_materials_logs", records: mapUsedMaterialLogs(data.used_materials_logs || []) },
     ];
 
     console.log("Import started with data:", {
