@@ -161,7 +161,12 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
         if (!response.ok) {
           const errorText = await response.text();
           failedTables.push(`${table} (${response.status})`);
-          console.error(`Failed to import ${table}:`, errorText);
+          console.error(`Failed to import ${table}:`, {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText,
+            firstRecord: records[0],
+          });
         } else {
           importedCount++;
           console.log(`Successfully imported ${table}: ${records.length} records`);
