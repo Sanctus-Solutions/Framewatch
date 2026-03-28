@@ -116,148 +116,63 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
       return { success: false, message: "Supabase configuration missing" };
     }
 
-    const insertPromises = [];
+    const importOrder = [
+      { table: "units", records: data.units || [] },
+      { table: "buildings", records: data.buildings || [] },
+      { table: "categories", records: data.categories || [] },
+      { table: "job_types", records: data.job_types || [] },
+      { table: "materials", records: data.materials || [] },
+      { table: "unit_conversions", records: data.unit_conversions || [] },
+      { table: "inventory_logs", records: data.inventory_logs || [] },
+      { table: "waste_logs", records: data.waste_logs || [] },
+      { table: "used_materials_logs", records: data.used_materials_logs || [] },
+    ];
 
-    // Insert data in reverse order of deletion (parent tables first)
-    if (data.units && data.units.length > 0) {
-      insertPromises.push(
-        fetch(`${supabaseUrl}/rest/v1/units`, {
+    const failedTables: string[] = [];
+    let importedCount = 0;
+
+    // Insert sequentially to respect foreign key constraints
+    for (const { table, records } of importOrder) {
+      if (records.length === 0) {
+        console.log(`Skipping ${table}: no records`);
+        continue;
+      }
+
+      try {
+        const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             apikey: supabaseAnonKey,
             Authorization: `Bearer ${supabaseAnonKey}`,
           },
-          body: JSON.stringify(data.units),
-        })
-      );
+          body: JSON.stringify(records),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          failedTables.push(`${table} (${response.status})`);
+          console.error(`Failed to import ${table}:`, errorText);
+        } else {
+          importedCount++;
+          console.log(`Successfully imported ${table}: ${records.length} records`);
+        }
+      } catch (error) {
+        failedTables.push(table);
+        console.error(`Error importing ${table}:`, error);
+      }
     }
 
-    if (data.buildings && data.buildings.length > 0) {
-      insertPromises.push(
-        fetch(`${supabaseUrl}/rest/v1/buildings`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify(data.buildings),
-        })
-      );
-    }
-
-    if (data.categories && data.categories.length > 0) {
-      insertPromises.push(
-        fetch(`${supabaseUrl}/rest/v1/categories`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify(data.categories),
-        })
-      );
-    }
-
-    if (data.job_types && data.job_types.length > 0) {
-      insertPromises.push(
-        fetch(`${supabaseUrl}/rest/v1/job_types`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify(data.job_types),
-        })
-      );
-    }
-
-    if (data.materials && data.materials.length > 0) {
-      insertPromises.push(
-        fetch(`${supabaseUrl}/rest/v1/materials`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify(data.materials),
-        })
-      );
-    }
-
-    if (data.unit_conversions && data.unit_conversions.length > 0) {
-      insertPromises.push(
-        fetch(`${supabaseUrl}/rest/v1/unit_conversions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify(data.unit_conversions),
-        })
-      );
-    }
-
-    if (data.inventory_logs && data.inventory_logs.length > 0) {
-      insertPromises.push(
-        fetch(`${supabaseUrl}/rest/v1/inventory_logs`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify(data.inventory_logs),
-        })
-      );
-    }
-
-    if (data.waste_logs && data.waste_logs.length > 0) {
-      insertPromises.push(
-        fetch(`${supabaseUrl}/rest/v1/waste_logs`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify(data.waste_logs),
-        })
-      );
-    }
-
-    if (data.used_materials_logs && data.used_materials_logs.length > 0) {
-      insertPromises.push(
-        fetch(`${supabaseUrl}/rest/v1/used_materials_logs`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify(data.used_materials_logs),
-        })
-      );
-    }
-
-    const results = await Promise.all(insertPromises);
-    const failedInserts = results.filter((r) => !r.ok);
-
-    if (failedInserts.length > 0) {
+    if (failedTables.length > 0) {
       return {
         success: false,
-        message: `Import failed: ${failedInserts.length} tables failed to import`,
+        message: `Import partially failed. ${importedCount} tables succeeded, ${failedTables.length} failed: ${failedTables.join(", ")}`,
       };
     }
 
     return {
       success: true,
-      message: `Successfully imported ${insertPromises.length} tables with all records`,
+      message: `Successfully imported ${importedCount} tables with all records`,
     };
   } catch (error) {
     console.error("Import failed:", error);
