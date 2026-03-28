@@ -187,7 +187,6 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
         size: r.size,
         unit: r.unit,
         job_name: r.job_name || r.jobName || null,
-        note: r.note || null,
       }));
 
     const importOrder = [
