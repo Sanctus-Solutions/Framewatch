@@ -33,92 +33,12 @@ type StandardEntry = {
 type JobStandardComparisonProps = {
   materials: MaterialOption[];
   completedJobs: CompletedJob[];
+  standards: StandardEntry[];
 };
-
-const STORAGE_KEY = "framewatch_job_standards_v1";
-
-function normalizeStandard(value: unknown): StandardEntry | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const obj = value as Record<string, unknown>;
-  const id = typeof obj.id === "string" ? obj.id : "";
-  const jobType = typeof obj.jobType === "string" ? obj.jobType.trim() : "";
-  const materialId = typeof obj.materialId === "string" ? obj.materialId : "";
-  const quantity = Number(obj.quantity);
-  const note = typeof obj.note === "string" ? obj.note.trim() : "";
-  const createdAt = typeof obj.createdAt === "string" ? obj.createdAt : "";
-
-  if (!id || !jobType || !materialId || Number.isNaN(quantity) || quantity <= 0 || !createdAt) {
-    return null;
-  }
-
-  return {
-    id,
-    jobType,
-    materialId,
-    quantity,
-    ...(note ? { note } : {}),
-    createdAt,
-  };
-}
-
-function loadStandardsFromStorage(): StandardEntry[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .map(normalizeStandard)
-      .filter((entry): entry is StandardEntry => Boolean(entry));
-  } catch {
-    return [];
-  }
-}
-
-function saveStandardsToStorage(entries: StandardEntry[]) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-}
-
-export function JobStandardComparison({ materials, completedJobs }: JobStandardComparisonProps) {
-  const [standards, setStandards] = useState<StandardEntry[]>([]);
+export function JobStandardComparison({ materials, completedJobs, standards }: JobStandardComparisonProps) {
   const [search, setSearch] = useState("");
   const [selectedStandardJobType, setSelectedStandardJobType] = useState("");
   const [selectedProjectJobName, setSelectedProjectJobName] = useState("");
-
-  useEffect(() => {
-    setStandards(loadStandardsFromStorage());
-  }, []);
-
-  useEffect(() => {
-    const validMaterialIds = new Set(materials.map((material) => material.id));
-
-    setStandards((current) => {
-      const cleaned = current.filter((entry) => validMaterialIds.has(entry.materialId));
-
-      if (cleaned.length !== current.length) {
-        saveStandardsToStorage(cleaned);
-      }
-
-      return cleaned;
-    });
-  }, [materials]);
 
   const materialById = useMemo(
     () =>

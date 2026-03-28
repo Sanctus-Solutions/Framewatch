@@ -13,7 +13,7 @@ type BackupContentsSummary = {
   job_types: number;
   buildings: number;
   unit_conversions: number;
-  job_standards: number;
+  job_supply_standards: number;
   source: "export" | "import";
 };
 
@@ -24,7 +24,6 @@ export function DataExportImport() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [backupSummary, setBackupSummary] = useState<BackupContentsSummary | null>(null);
-  const JOB_STANDARDS_STORAGE_KEY = "framewatch_job_standards_v1";
 
   const getRecordCount = (table: unknown): number =>
     Array.isArray(table) ? table.length : 0;
@@ -46,16 +45,6 @@ export function DataExportImport() {
         company: "Tuckertown Buildings",
         exported_at: new Date().toISOString(),
         source: "FrameWatch MVP",
-        client_config: {
-          job_standards: (() => {
-            try {
-              const raw = window.localStorage.getItem(JOB_STANDARDS_STORAGE_KEY);
-              return raw ? JSON.parse(raw) : [];
-            } catch {
-              return [];
-            }
-          })(),
-        },
         record_counts: {
           materials: getRecordCount(data.materials),
           inventory_logs: getRecordCount(data.inventory_logs),
@@ -66,13 +55,13 @@ export function DataExportImport() {
           job_types: getRecordCount(data.job_types),
           buildings: getRecordCount(data.buildings),
           unit_conversions: getRecordCount(data.unit_conversions),
+          job_supply_standards: getRecordCount((data as { job_supply_standards?: unknown[] }).job_supply_standards),
         },
         data,
       };
 
       setBackupSummary({
         ...backupEnvelope.record_counts,
-        job_standards: getRecordCount(backupEnvelope.client_config.job_standards),
         source: "export",
       });
 
@@ -107,18 +96,14 @@ export function DataExportImport() {
       const parsed = JSON.parse(text);
       const data = parsed?.data && typeof parsed.data === "object" ? parsed.data : parsed;
 
-      const parsedJobStandards = parsed?.client_config?.job_standards;
-      const jobStandardsCount = Array.isArray(parsedJobStandards)
-        ? parsedJobStandards.length
-        : (() => {
-            try {
-              const local = window.localStorage.getItem(JOB_STANDARDS_STORAGE_KEY);
-              const parsedLocal = local ? JSON.parse(local) : [];
-              return Array.isArray(parsedLocal) ? parsedLocal.length : 0;
-            } catch {
-              return 0;
-            }
-          })();
+      // Legacy compatibility: old backups stored standards in client_config.job_standards.
+      if (
+        Array.isArray(parsed?.client_config?.job_standards) &&
+        !Array.isArray((data as { job_supply_standards?: unknown[] }).job_supply_standards)
+      ) {
+        (data as { job_supply_standards?: unknown[] }).job_supply_standards =
+          parsed.client_config.job_standards;
+      }
 
       setBackupSummary({
         materials: getRecordCount(data.materials),
@@ -130,17 +115,11 @@ export function DataExportImport() {
         job_types: getRecordCount(data.job_types),
         buildings: getRecordCount(data.buildings),
         unit_conversions: getRecordCount(data.unit_conversions),
-        job_standards: jobStandardsCount,
+        job_supply_standards: getRecordCount(
+          (data as { job_supply_standards?: unknown[] }).job_supply_standards,
+        ),
         source: "import",
       });
-
-      // Restore browser-side configuration data when present.
-      if (parsed?.client_config?.job_standards) {
-        window.localStorage.setItem(
-          JOB_STANDARDS_STORAGE_KEY,
-          JSON.stringify(parsed.client_config.job_standards),
-        );
-      }
       
       // Validate structure
       const requiredTables = [
@@ -189,14 +168,12 @@ export function DataExportImport() {
     try {
       const result = await resetAllData();
       if (result.success) {
-        window.localStorage.removeItem(JOB_STANDARDS_STORAGE_KEY);
-
         setMessage("✓ " + result.message);
         setBackupSummary((current) =>
           current
             ? {
                 ...current,
-                job_standards: 0,
+                job_supply_standards: 0,
               }
             : current,
         );
@@ -272,7 +249,7 @@ export function DataExportImport() {
         <ul className="space-y-1 text-sm text-slate-300">
           <li>✓ Export captures all current data</li>
           <li>✓ Backup includes export timestamp and company metadata</li>
-          <li>✓ Backup includes browser-stored job standards config</li>
+          <li>✓ Backup includes Supabase job supply standards</li>
           <li>✓ Import accepts both legacy raw JSON and new backup envelope format</li>
           <li>✓ JSON format is migration-ready for future multi-tenant rollout</li>
           <li>✓ Store this file off-device (Drive, OneDrive, Dropbox) for safekeeping</li>
@@ -295,7 +272,7 @@ export function DataExportImport() {
             <p>Job Types: {backupSummary.job_types}</p>
             <p>Buildings: {backupSummary.buildings}</p>
             <p>Unit Conversions: {backupSummary.unit_conversions}</p>
-            <p>Job Standards (Browser Config): {backupSummary.job_standards}</p>
+            <p>Job Supply Standards: {backupSummary.job_supply_standards}</p>
           </div>
         </div>
       ) : null}

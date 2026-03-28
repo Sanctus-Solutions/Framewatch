@@ -12,6 +12,7 @@ type MaterialOption = {
 type JobUsageFormProps = {
   materials: MaterialOption[];
   action: (formData: FormData) => void | Promise<void>;
+  standards: StandardEntry[];
   buildings?: Array<{
     id: string;
     name: string;
@@ -37,68 +38,7 @@ type StandardEntry = {
   createdAt: string;
 };
 
-const STANDARDS_STORAGE_KEY = "framewatch_job_standards_v1";
-
-function normalizeStandardEntry(value: unknown): StandardEntry | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const obj = value as Record<string, unknown>;
-  const id = typeof obj.id === "string" ? obj.id : "";
-  const jobType = typeof obj.jobType === "string" ? obj.jobType.trim() : "";
-  const materialId = typeof obj.materialId === "string" ? obj.materialId : "";
-  const quantity = Number(obj.quantity);
-  const note = typeof obj.note === "string" ? obj.note.trim() : "";
-  const createdAt = typeof obj.createdAt === "string" ? obj.createdAt : "";
-
-  if (!id || !jobType || !materialId || Number.isNaN(quantity) || quantity <= 0 || !createdAt) {
-    return null;
-  }
-
-  return {
-    id,
-    jobType,
-    materialId,
-    quantity,
-    ...(note ? { note } : {}),
-    createdAt,
-  };
-}
-
-function loadStandardsFromStorage(): StandardEntry[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STANDARDS_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .map(normalizeStandardEntry)
-      .filter((entry): entry is StandardEntry => Boolean(entry));
-  } catch {
-    return [];
-  }
-}
-
-function saveStandardsToStorage(entries: StandardEntry[]) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(STANDARDS_STORAGE_KEY, JSON.stringify(entries));
-}
-
-export function JobUsageForm({ materials, action, buildings = [] }: JobUsageFormProps) {
+export function JobUsageForm({ materials, action, standards, buildings = [] }: JobUsageFormProps) {
   const [jobName, setJobName] = useState("");
   const [selectedBuildingId, setSelectedBuildingId] = useState("");
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -106,27 +46,8 @@ export function JobUsageForm({ materials, action, buildings = [] }: JobUsageForm
     { rowId: 1, materialId: "", quantity: "", note: "" },
   ]);
   const [nextRowId, setNextRowId] = useState(2);
-  const [standards, setStandards] = useState<StandardEntry[]>([]);
   const [standardSearch, setStandardSearch] = useState("");
   const [selectedStandardType, setSelectedStandardType] = useState("");
-
-  useEffect(() => {
-    setStandards(loadStandardsFromStorage());
-  }, []);
-
-  useEffect(() => {
-    const validMaterialIds = new Set(materials.map((material) => material.id));
-
-    setStandards((current) => {
-      const cleaned = current.filter((entry) => validMaterialIds.has(entry.materialId));
-
-      if (cleaned.length !== current.length) {
-        saveStandardsToStorage(cleaned);
-      }
-
-      return cleaned;
-    });
-  }, [materials]);
 
   const materialById = useMemo(
     () =>

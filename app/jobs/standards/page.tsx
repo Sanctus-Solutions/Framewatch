@@ -1,11 +1,20 @@
 import Link from "next/link";
-import { fetchJobTypesFromSupabase, fetchMaterialsFromSupabase } from "../../src/lib/supabase";
+import {
+  fetchJobTypesFromSupabase,
+  fetchMaterialsFromSupabase,
+  fetchJobSupplyStandardsFromSupabase,
+} from "../../src/lib/supabase";
 import { JobStandardsClient } from "../../src/components/jobs/job-standards-client";
 
 export default async function JobStandardsPage() {
-  const [{ data: materials, error }, { data: jobTypes, error: jobTypeError }] = await Promise.all([
+  const [
+    { data: materials, error },
+    { data: jobTypes, error: jobTypeError },
+    { data: standards, error: standardsError },
+  ] = await Promise.all([
     fetchMaterialsFromSupabase(),
     fetchJobTypesFromSupabase(),
+    fetchJobSupplyStandardsFromSupabase(),
   ]);
 
   return (
@@ -30,6 +39,11 @@ export default async function JobStandardsPage() {
             {jobTypeError ? (
               <p className="mt-3 text-sm text-amber-200">
                 Unable to load job types from Supabase. {jobTypeError}
+              </p>
+            ) : null}
+            {standardsError ? (
+              <p className="mt-3 text-sm text-amber-200">
+                Unable to load job standards from Supabase. {standardsError}
               </p>
             ) : null}
           </div>
@@ -57,10 +71,11 @@ export default async function JobStandardsPage() {
             sku: material.sku,
           }))}
           jobTypes={jobTypes.map((jobType) => jobType.name)}
+          standards={standards}
         />
 
         <p className="mt-6 text-xs text-slate-500">
-          Standards are saved in this browser for MVP use and can be reset by clearing site storage.
+          Standards are now stored in Supabase and shared across sessions.
         </p>
       </section>
     </main>

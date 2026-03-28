@@ -635,6 +635,76 @@ export async function deleteAllDataFromTable(tableName: string) {
   return supabaseDelete(`/${tableName}?id=not.is.null`);
 }
 
+// Job Supply Standards Functions
+
+type SupabaseJobSupplyStandardRow = {
+  id: string;
+  job_type?: string;
+  jobType?: string;
+  material_id?: string;
+  materialId?: string;
+  quantity: number;
+  note?: string | null;
+  created_at?: string;
+  createdAt?: string;
+};
+
+export type JobSupplyStandard = {
+  id: string;
+  jobType: string;
+  materialId: string;
+  quantity: number;
+  note?: string;
+  createdAt: string;
+};
+
+export type CreateJobSupplyStandardInput = {
+  jobType: string;
+  materialId: string;
+  quantity: number;
+  note?: string;
+};
+
+const normalizeJobSupplyStandard = (row: SupabaseJobSupplyStandardRow): JobSupplyStandard => ({
+  id: row.id,
+  jobType: row.job_type ?? row.jobType ?? "",
+  materialId: row.material_id ?? row.materialId ?? "",
+  quantity: Number(row.quantity) || 0,
+  ...(row.note ? { note: row.note } : {}),
+  createdAt: row.created_at ?? row.createdAt ?? new Date(0).toISOString(),
+});
+
+export async function fetchJobSupplyStandardsFromSupabase() {
+  const result = await supabaseGet<SupabaseJobSupplyStandardRow[]>(
+    `/job_supply_standards?order=created_at.desc`,
+  );
+
+  return {
+    data: (result.data ?? []).map(normalizeJobSupplyStandard),
+    error: result.error,
+  };
+}
+
+export async function createJobSupplyStandardInSupabase(entry: CreateJobSupplyStandardInput) {
+  const payload: Record<string, string | number | null> = {
+    id: crypto.randomUUID(),
+    job_type: entry.jobType,
+    material_id: entry.materialId,
+    quantity: entry.quantity,
+    created_at: new Date().toISOString(),
+  };
+
+  if (entry.note) {
+    payload.note = entry.note;
+  }
+
+  return supabasePost("/job_supply_standards", payload);
+}
+
+export async function deleteJobSupplyStandardInSupabase(standardId: string) {
+  return supabaseDelete(`/job_supply_standards?id=eq.${encodeURIComponent(standardId)}`);
+}
+
 // Unit Conversions Functions
 
 type SupabaseUnitConversionRow = {

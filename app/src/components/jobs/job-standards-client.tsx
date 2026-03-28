@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  createJobSupplyStandardInSupabase,
+  deleteJobSupplyStandardInSupabase,
+  fetchJobSupplyStandardsFromSupabase,
+  type JobSupplyStandard,
+} from "../../lib/supabase";
 
 type MaterialOption = {
   id: string;
@@ -20,6 +26,7 @@ type StandardEntry = {
 type JobStandardsClientProps = {
   materials: MaterialOption[];
   jobTypes: string[];
+  standards: JobSupplyStandard[];
 };
 
 type StandardRow = {
@@ -27,8 +34,6 @@ type StandardRow = {
   quantity: string;
   note: string;
 };
-
-const STORAGE_KEY = "framewatch_job_standards_v1";
 
 function normalizeEntry(value: unknown): StandardEntry | null {
   if (!value || typeof value !== "object") {
@@ -57,43 +62,24 @@ function normalizeEntry(value: unknown): StandardEntry | null {
   };
 }
 
-function loadStandards(): StandardEntry[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.map(normalizeEntry).filter((entry): entry is StandardEntry => Boolean(entry));
-  } catch {
-    return [];
-  }
-}
-
-function saveStandards(entries: StandardEntry[]) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+function toStandardEntry(entry: JobSupplyStandard): StandardEntry {
+  return {
+    id: entry.id,
+    jobType: entry.jobType,
+    materialId: entry.materialId,
+    quantity: entry.quantity,
+    ...(entry.note ? { note: entry.note } : {}),
+    createdAt: entry.createdAt,
+  };
 }
 
 const emptyRow = (): StandardRow => ({ materialId: "", quantity: "", note: "" });
 
-export function JobStandardsClient({ materials, jobTypes }: JobStandardsClientProps) {
+export function JobStandardsClient({ materials, jobTypes, standards }: JobStandardsClientProps) {
   const [jobType, setJobType] = useState(jobTypes[0] ?? "");
   const [rows, setRows] = useState<StandardRow[]>([emptyRow()]);
-  const [entries, setEntries] = useState<StandardEntry[]>(() => loadStandards());
-  const [status, setStatus] = useState<"idle" | "saved" | "validation" | "deleted">("idle");
+  const [entries, setEntries] = useState<StandardEntry[]>(() => standards.map(toStandardEntry));
+  const [status, setStatus] = useState<"idle" | "saved" | "validation" | "deleted" | "error">("idle");
 
   useEffect(() => {
     const validMaterialIds = new Set(materials.map((material) => material.id));
@@ -101,13 +87,19 @@ export function JobStandardsClient({ materials, jobTypes }: JobStandardsClientPr
     setEntries((current) => {
       const cleaned = current.filter((entry) => validMaterialIds.has(entry.materialId));
 
-      if (cleaned.length !== current.length) {
-        saveStandards(cleaned);
-      }
-
       return cleaned;
     });
   }, [materials]);
+
+  const refreshStandards = async () => {
+    const { data, error } = await fetchJobSupplyStandardsFromSupabase();
+    if (error) {
+      setStatus("error");
+      return;
+    }
+
+    setEntries((data ?? []).map(toStandardEntry));
+  };
 
   const materialById = useMemo(
     () =>
@@ -158,7 +150,7 @@ export function JobStandardsClient({ materials, jobTypes }: JobStandardsClientPr
     });
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (jobTypes.length === 0) {
@@ -205,19 +197,35 @@ export function JobStandardsClient({ materials, jobTypes }: JobStandardsClientPr
       return;
     }
 
-    const updated = [...entries, ...nextEntries];
-    setEntries(updated);
-    saveStandards(updated);
+    for (const entry of nextEntries) {
+      const result = await createJobSupplyStandardInSupabase({
+        jobType: entry.jobType,
+        materialId: entry.materialId,
+        quantity: entry.quantity,
+        ...(entry.note ? { note: entry.note } : {}),
+      });
+
+      if (result.error) {
+        setStatus("error");
+        return;
+      }
+    }
+
+    await refreshStandards();
 
     setJobType(jobTypes[0] ?? "");
     setRows([emptyRow()]);
     setStatus("saved");
   };
 
-  const handleDelete = (entryId: string) => {
-    const updated = entries.filter((entry) => entry.id !== entryId);
-    setEntries(updated);
-    saveStandards(updated);
+  const handleDelete = async (entryId: string) => {
+    const result = await deleteJobSupplyStandardInSupabase(entryId);
+    if (result.error) {
+      setStatus("error");
+      return;
+    }
+
+    await refreshStandards();
     setStatus("deleted");
   };
 
@@ -245,6 +253,12 @@ export function JobStandardsClient({ materials, jobTypes }: JobStandardsClientPr
           <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
             Job type is required. For each filled row, include both material and quantity greater
             than zero. Add job types first if none are available.
+          </p>
+        ) : null}
+
+        {status === "error" ? (
+          <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+            Unable to save standards to Supabase right now. Please try again.
           </p>
         ) : null}
 

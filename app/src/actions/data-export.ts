@@ -11,6 +11,7 @@ import {
   fetchJobTypesFromSupabase,
   fetchBuildingsFromSupabase,
   fetchUnitConversionsFromSupabase,
+  fetchJobSupplyStandardsFromSupabase,
   deleteAllDataFromTable,
 } from "../lib/supabase";
 
@@ -24,6 +25,7 @@ type ExportData = {
   job_types: any[];
   buildings: any[];
   unit_conversions: any[];
+  job_supply_standards: any[];
 };
 
 export async function exportAllDataAsJSON(): Promise<ExportData | null> {
@@ -66,6 +68,7 @@ export async function exportAllDataAsJSON(): Promise<ExportData | null> {
       jobTypes,
       buildings,
       conversions,
+      jobSupplyStandards,
       unitsRaw,
     ] = await Promise.all([
       fetchMaterialsFromSupabase(),
@@ -78,6 +81,7 @@ export async function exportAllDataAsJSON(): Promise<ExportData | null> {
       fetchJobTypesFromSupabase(),
       fetchBuildingsFromSupabase(),
       fetchUnitConversionsFromSupabase(),
+      fetchJobSupplyStandardsFromSupabase(),
       fetchRawTable<{ id: string; name: string; description?: string | null }>(
         "units",
         "id,name,description",
@@ -102,6 +106,7 @@ export async function exportAllDataAsJSON(): Promise<ExportData | null> {
       job_types: jobTypes.data || [],
       buildings: buildings.data || [],
       unit_conversions: conversions.data || [],
+      job_supply_standards: jobSupplyStandards.data || [],
     };
   } catch (error) {
     console.error("Export failed:", error);
@@ -114,6 +119,7 @@ export async function resetAllData(): Promise<{ success: boolean; message: strin
     // Delete in dependency order to respect foreign key constraints
     // Tables that reference others must be deleted first
     const deleteOrder = [
+      "job_supply_standards",
       "used_materials_logs",    // references materials, units
       "waste_logs",             // references materials
       "unit_conversions",       // references units
@@ -244,6 +250,16 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
         job_name: r.job_name || r.jobName || null,
       }));
 
+    const mapJobSupplyStandards = (records: any[]): any[] =>
+      records.map(r => ({
+        id: typeof r.id === "string" && r.id ? r.id : crypto.randomUUID(),
+        job_type: r.job_type || r.jobType,
+        material_id: r.material_id || r.materialId,
+        quantity: r.quantity,
+        note: r.note || null,
+        created_at: r.created_at || r.createdAt || new Date().toISOString(),
+      }));
+
     const importOrder = [
       { table: "units", records: mapUnits(data.units || []) },
       { table: "buildings", records: mapBuildings(data.buildings || []) },
@@ -254,6 +270,7 @@ export async function importDataFromJSON(data: ExportData): Promise<{ success: b
       { table: "inventory_logs", records: mapInventoryLogs(data.inventory_logs || []) },
       { table: "waste_logs", records: mapWasteLogs(data.waste_logs || []) },
       { table: "used_materials_logs", records: mapUsedMaterialLogs(data.used_materials_logs || []) },
+      { table: "job_supply_standards", records: mapJobSupplyStandards(data.job_supply_standards || []) },
     ];
 
     console.log("Import started with data:", {

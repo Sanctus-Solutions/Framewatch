@@ -8,6 +8,7 @@ import {
   deleteInventoryLogsByJobNameInSupabase,
   fetchBuildingsFromSupabase,
   fetchInventoryLogsFromSupabase,
+  fetchJobSupplyStandardsFromSupabase,
   fetchMaterialsFromSupabase,
 } from "../src/lib/supabase";
 import { JobUsageForm } from "../src/components/jobs/job-usage-form";
@@ -191,10 +192,11 @@ type JobsPageProps = {
 
 export default async function JobsPage({ searchParams }: JobsPageProps) {
   const params = searchParams ?? {};
-  const [{ data: logs, error }, { data: materials }, { data: buildings }] = await Promise.all([
+  const [{ data: logs, error }, { data: materials }, { data: buildings }, { data: standards }] = await Promise.all([
     fetchInventoryLogsFromSupabase(),
     fetchMaterialsFromSupabase(),
     fetchBuildingsFromSupabase(),
+    fetchJobSupplyStandardsFromSupabase(),
   ]);
 
   const materialById = materials.reduce<Record<string, { name: string }>>(
@@ -204,6 +206,9 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
     },
     {},
   );
+
+  const validMaterialIds = new Set(materials.map((material) => material.id));
+  const validStandards = standards.filter((entry) => validMaterialIds.has(entry.materialId));
 
   const jobSummaries = Object.values(
     logs.reduce<Record<string, JobSummary>>((acc, log) => {
@@ -362,6 +367,14 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
               name: material.name,
               sku: material.sku,
             }))}
+            standards={validStandards.map((entry) => ({
+              id: entry.id,
+              jobType: entry.jobType,
+              materialId: entry.materialId,
+              quantity: entry.quantity,
+              ...(entry.note ? { note: entry.note } : {}),
+              createdAt: entry.createdAt,
+            }))}
             buildings={buildings}
           />
         </div>
@@ -482,6 +495,14 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
             id: material.id,
             name: material.name,
             sku: material.sku,
+          }))}
+          standards={validStandards.map((entry) => ({
+            id: entry.id,
+            jobType: entry.jobType,
+            materialId: entry.materialId,
+            quantity: entry.quantity,
+            ...(entry.note ? { note: entry.note } : {}),
+            createdAt: entry.createdAt,
           }))}
           completedJobs={jobSummaries.map((job) => ({
             jobName: job.jobName,
